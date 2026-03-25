@@ -1,6 +1,8 @@
+-- Pobranie biblioteki GUI (Tego Ci brakowało!)
 local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
 local Window = OrionLib:MakeWindow({Name = "Xeno Fly Menu", HidePremium = false, SaveConfig = true, ConfigFolder = "XenoConfig"})
 
+-- Główne zmienne (Tego też brakowało!)
 local Flying = false
 local Speed = 50
 local player = game.Players.LocalPlayer
@@ -68,4 +70,5 @@ mouse.KeyDown:Connect(function(key)
     end
 end)
 
+-- Odpalenie GUI na ekranie
 OrionLib:Init()
