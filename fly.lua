@@ -14,23 +14,20 @@ local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local mouse = player:GetMouse()
 local Lighting = game:GetService("Lighting")
+local CoreGui = game:GetService("CoreGui")
 local Flying = false
 local Speed = 50
 local bv
 local wybranyGracz = nil
 
--- Funkcja pobierania listy graczy
 local function pobierzGraczy()
     local lista = {}
     for _, p in pairs(Players:GetPlayers()) do
-        if p.Name ~= player.Name then
-            table.insert(lista, p.Name)
-        end
+        if p.Name ~= player.Name then table.insert(lista, p.Name) end
     end
     return lista
 end
 
--- Funkcja latania
 local function toggleFly()
     local character = player.Character
     if not character then return end
@@ -55,30 +52,19 @@ local function toggleFly()
     end
 end
 
--- Zakładka 1: Poruszanie się (Latanie)
+-- ================= ZAKŁADKA 1: PORUSZANIE =================
 local TabPoruszanie = Window:CreateTab("Poruszanie się", 4483362458)
-local SectionFly = TabPoruszanie:CreateSection("Opcje Latania")
-
 local FlyToggle = TabPoruszanie:CreateToggle({
-   Name = "Latanie (Zastępuje też klawisz F)",
+   Name = "Latanie (Klawisz F)",
    CurrentValue = false,
    Flag = "FlyToggle",
-   Callback = function(Value)
-        Flying = Value
-        toggleFly()
-   end,
+   Callback = function(Value) Flying = Value toggleFly() end,
 })
 
 TabPoruszanie:CreateSlider({
    Name = "Prędkość latania",
-   Range = {10, 300},
-   Increment = 1,
-   Suffix = "Speed",
-   CurrentValue = 50,
-   Flag = "FlySpeed",
-   Callback = function(Value)
-        Speed = Value
-   end,
+   Range = {10, 300}, Increment = 1, Suffix = "Speed", CurrentValue = 50, Flag = "FlySpeed",
+   Callback = function(Value) Speed = Value end,
 })
 
 mouse.KeyDown:Connect(function(key)
@@ -89,26 +75,16 @@ mouse.KeyDown:Connect(function(key)
     end
 end)
 
--- Zakładka 2: Gracze (Teleportacja)
+-- ================= ZAKŁADKA 2: GRACZE =================
 local TabGracze = Window:CreateTab("Gracze", 4483362458)
-local SectionGracze = TabGracze:CreateSection("Interakcje z graczami")
-
 local PlayerDropdown = TabGracze:CreateDropdown({
-   Name = "Wybierz cel",
-   Options = pobierzGraczy(),
-   CurrentOption = {""},
-   MultipleOptions = false,
-   Flag = "DropdownGraczy",
-   Callback = function(Option)
-        wybranyGracz = type(Option) == "table" and Option[1] or Option
-   end,
+   Name = "Wybierz cel", Options = pobierzGraczy(), CurrentOption = {""}, MultipleOptions = false, Flag = "DropdownGraczy",
+   Callback = function(Option) wybranyGracz = type(Option) == "table" and Option[1] or Option end,
 })
 
 TabGracze:CreateButton({
    Name = "🔄 Odśwież listę graczy",
-   Callback = function()
-        PlayerDropdown:Refresh(pobierzGraczy())
-   end,
+   Callback = function() PlayerDropdown:Refresh(pobierzGraczy()) end,
 })
 
 TabGracze:CreateButton({
@@ -123,68 +99,84 @@ TabGracze:CreateButton({
    end,
 })
 
--- Zakładka 3: EXPLOIT (Czarne Niebo)
+-- ================= ZAKŁADKA 3: EXPLOIT =================
 local TabExploit = Window:CreateTab("Exploit", 4483362458)
-local SectionExploit = TabExploit:CreateSection("Modyfikacje Serwera")
-
 TabExploit:CreateButton({
    Name = "🌌 Zmień niebo na CZARNE (7 sekund)",
    Callback = function()
-        -- Zapisywanie oryginalnego stanu
         local stareTime = Lighting.TimeOfDay
         local starySky = Lighting:FindFirstChildOfClass("Sky")
         
-        -- Zmiana na czarne
         Lighting.TimeOfDay = "00:00:00"
         Lighting.GlobalShadows = false
         Lighting.Ambient = Color3.new(0, 0, 0)
-        
         if starySky then starySky.Parent = nil end
         
         local czarneNiebo = Instance.new("Sky")
-        czarneNiebo.SkyboxBk = "rbxassetid://0"
-        czarneNiebo.SkyboxDn = "rbxassetid://0"
-        czarneNiebo.SkyboxFt = "rbxassetid://0"
-        czarneNiebo.SkyboxLf = "rbxassetid://0"
-        czarneNiebo.SkyboxRt = "rbxassetid://0"
-        czarneNiebo.SkyboxUp = "rbxassetid://0"
+        czarneNiebo.SkyboxBk = "rbxassetid://0" czarneNiebo.SkyboxDn = "rbxassetid://0" czarneNiebo.SkyboxFt = "rbxassetid://0"
+        czarneNiebo.SkyboxLf = "rbxassetid://0" czarneNiebo.SkyboxRt = "rbxassetid://0" czarneNiebo.SkyboxUp = "rbxassetid://0"
         czarneNiebo.Parent = Lighting
         
-        -- Exploit wysyłający sygnał do innych graczy przez luki w RemoteEvents
         for _, v in pairs(game:GetDescendants()) do
             if v:IsA("RemoteEvent") then
                 local nazwa = v.Name:lower()
-                if nazwa:match("light") or nazwa:match("sky") or nazwa:match("time") or nazwa:match("day") or nazwa:match("sync") then
+                if nazwa:match("light") or nazwa:match("sky") or nazwa:match("time") then
                     pcall(function() v:FireServer("00:00:00") end)
-                    pcall(function() v:FireServer(Color3.new(0,0,0)) end)
-                    pcall(function() v:FireServer(0) end)
                 end
             end
         end
         
-        Rayfield:Notify({Title = "Exploit", Content = "Niebo zmienione na 7 sekund!", Duration = 2})
-        
-        -- Licznik 7 sekund i przywracanie
         task.delay(7, function()
             czarneNiebo:Destroy()
             if starySky then starySky.Parent = Lighting end
             Lighting.TimeOfDay = stareTime
-            Lighting.GlobalShadows = true
             Lighting.Ambient = Color3.fromRGB(128, 128, 128)
-            
-            -- Wysłanie sygnału przywracającego do serwera
-            for _, v in pairs(game:GetDescendants()) do
-                if v:IsA("RemoteEvent") then
-                    local nazwa = v.Name:lower()
-                    if nazwa:match("light") or nazwa:match("sky") or nazwa:match("time") or nazwa:match("day") or nazwa:match("sync") then
-                        pcall(function() v:FireServer(stareTime) end)
-                        pcall(function() v:FireServer(14) end)
-                    end
-                end
-            end
-            Rayfield:Notify({Title = "Exploit", Content = "Niebo wróciło do normy.", Duration = 2})
         end)
    end,
 })
 
-Rayfield:Notify({Title = "planexd_0 Hub", Content = "Wgrano z zakładką Exploit!", Duration = 5})
+-- ================= ZAKŁADKA 4: TROLL (Fake Robux) =================
+local TabTroll = Window:CreateTab("Troll / Fake", 4483362458)
+TabTroll:CreateButton({
+   Name = "💰 Nieskończone Robuxy (Wizualne do screenów)",
+   Callback = function()
+        -- Tworzenie ogromnego, fejkowego interfejsu Robuxów na ekranie
+        local fakeUI = Instance.new("ScreenGui")
+        fakeUI.Name = "FakeRobuxUI"
+        fakeUI.Parent = CoreGui
+        
+        local textLabel = Instance.new("TextLabel")
+        textLabel.Size = UDim2.new(0, 500, 0, 100)
+        textLabel.Position = UDim2.new(0.5, -250, 0.2, 0)
+        textLabel.BackgroundTransparency = 1
+        textLabel.Text = "+ 999,999,999 R$"
+        textLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+        textLabel.TextScaled = true
+        textLabel.Font = Enum.Font.FredokaOne
+        textLabel.TextStrokeTransparency = 0
+        textLabel.Parent = fakeUI
+        
+        -- Dźwięk monet
+        local dzwiek = Instance.new("Sound")
+        dzwiek.SoundId = "rbxassetid://134756317" -- Dźwięk kasy
+        dzwiek.Volume = 2
+        dzwiek.Parent = CoreGui
+        dzwiek:Play()
+        
+        -- Animacja powiększania się tekstu
+        for i = 1, 10 do
+            textLabel.TextTransparency = textLabel.TextTransparency - 0.1
+            task.wait(0.05)
+        end
+        
+        Rayfield:Notify({Title = "HACK ZAKOŃCZONY", Content = "Robuxy zostały wygenerowane wizualnie na Twoim ekranie!", Duration = 5})
+        
+        -- Usunięcie po 10 sekundach
+        task.delay(10, function()
+            fakeUI:Destroy()
+            dzwiek:Destroy()
+        end)
+   end,
+})
+
+Rayfield:Notify({Title = "planexd_0 Hub", Content = "Wgrano z zakładką Troll (Fake Robux)!", Duration = 5})
