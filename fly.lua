@@ -3,15 +3,16 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
    Name = "planexd_0 Script Hub",
-   LoadingTitle = "Ładowanie skryptów...",
-   LoadingSubtitle = "by planexd_0",
+   LoadingTitle = "Ładowanie potężnych skryptów...",
+   LoadingSubtitle = "Witaj szefie, planexd_0!",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false
 })
 
--- Zmienne główne
+-- ================= ZMIENNE GŁÓWNE =================
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 local mouse = player:GetMouse()
 local Lighting = game:GetService("Lighting")
@@ -90,7 +91,7 @@ local PlayerDropdown = TabGracze:CreateDropdown({
 })
 TabGracze:CreateButton({ Name = "🔄 Odśwież listę", Callback = function() PlayerDropdown:Refresh(pobierzGraczy()) end })
 TabGracze:CreateButton({
-   Name = "⚡ Teleportuj do gracza",
+   Name = "⚡ Teleportuj DO gracza",
    Callback = function()
         if wybranyGracz then
             local target = Players:FindFirstChild(wybranyGracz)
@@ -117,12 +118,13 @@ TabExploit:CreateButton({
    end,
 })
 
--- ================= ZAKŁADKA 4: RIVALS (Bojowa) =================
+-- ================= ZAKŁADKA 4: RIVALS (MEGA BOJOWA) =================
 local TabRivals = Window:CreateTab("🎯 RIVALS", 4483362458)
+local SectionRivals = TabRivals:CreateSection("🔥 Bronie i Celowanie")
 
 local AimbotEnabled = false
 TabRivals:CreateToggle({
-   Name = "🔫 Aimbot (Namierzanie głowy)", CurrentValue = false, Flag = "AimbotToggle",
+   Name = "🔫 Aimbot (Automatyczne namierzanie głowy)", CurrentValue = false, Flag = "AimbotToggle",
    Callback = function(Value) AimbotEnabled = Value end,
 })
 RunService.RenderStepped:Connect(function()
@@ -152,41 +154,129 @@ TabRivals:CreateToggle({
    end,
 })
 
--- NOWE: Bicie przez ściany / Strzelasz byle gdzie
 local HitboxEnabled = false
 TabRivals:CreateToggle({
-   Name = "💥 Magiczne Kule (Bicie przez ściany/Byle gdzie)", CurrentValue = false, Flag = "HitboxToggle",
+   Name = "💥 Magiczne Kule V2 (Strzelasz w niebo, trafiasz wroga)", CurrentValue = false, Flag = "HitboxToggle",
    Callback = function(Value)
         HitboxEnabled = Value
         while HitboxEnabled do
             for _, p in pairs(Players:GetPlayers()) do
                 if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                    p.Character.HumanoidRootPart.Size = Vector3.new(40, 40, 40) -- Robi z nich gigantyczny cel
-                    p.Character.HumanoidRootPart.Transparency = 0.8 -- Lekko przezroczyste, żeby nie zasłaniało ekranu
-                    p.Character.HumanoidRootPart.BrickColor = BrickColor.new("Bright blue")
+                    p.Character.HumanoidRootPart.Size = Vector3.new(2048, 2048, 2048) -- Rozmiar całej mapy!
+                    p.Character.HumanoidRootPart.Transparency = 1 -- Niewidzialne, żeby nie psuło Ci ekranu
                     p.Character.HumanoidRootPart.CanCollide = false
                 end
             end
             task.wait(1)
         end
-        -- Przywracanie normy
         for _, p in pairs(Players:GetPlayers()) do
             if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
                 p.Character.HumanoidRootPart.Size = Vector3.new(2, 2, 1)
-                p.Character.HumanoidRootPart.Transparency = 1
+            end
+        end
+   end,
+})
+
+TabRivals:CreateSection("🏃 Ruch i Dominacja (8858585 Funkcji!)")
+
+TabRivals:CreateToggle({
+   Name = "🦅 Latanie (Rivals Fly)", CurrentValue = false, Flag = "RivalsFlyToggle",
+   Callback = function(Value) Flying = Value toggleFly() end,
+})
+
+local InfJump = false
+TabRivals:CreateToggle({
+   Name = "🦘 Nieskończony Skok (Inf Jump)", CurrentValue = false, Flag = "InfJump",
+   Callback = function(Value) InfJump = Value end,
+})
+UserInputService.JumpRequest:Connect(function()
+    if InfJump and player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+end)
+
+local Noclip = false
+TabRivals:CreateToggle({
+   Name = "👻 Przenikanie przez ściany (NoClip)", CurrentValue = false, Flag = "Noclip",
+   Callback = function(Value) Noclip = Value end,
+})
+RunService.Stepped:Connect(function()
+    if Noclip and player.Character then
+        for _, part in pairs(player.Character:GetDescendants()) do
+            if part:IsA("BasePart") then part.CanCollide = false end
+        end
+    end
+end)
+
+TabRivals:CreateSlider({
+   Name = "⚡ Szybkie Bieganie (WalkSpeed)", Range = {16, 200}, Increment = 1, Suffix = "WS", CurrentValue = 16, Flag = "SpeedSlider",
+   Callback = function(Value)
+        if player.Character and player.Character:FindFirstChild("Humanoid") then
+            player.Character.Humanoid.WalkSpeed = Value
+        end
+   end,
+})
+
+local Spinbot = false
+TabRivals:CreateToggle({
+   Name = "🌪️ Spinbot (Trudno Cię trafić)", CurrentValue = false, Flag = "Spinbot",
+   Callback = function(Value)
+        Spinbot = Value
+        while Spinbot and player.Character and player.Character:FindFirstChild("HumanoidRootPart") do
+            player.Character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame * CFrame.Angles(0, math.rad(50), 0)
+            task.wait()
+        end
+   end,
+})
+
+TabRivals:CreateSlider({
+   Name = "🔭 Zmiana FOV (Kąt widzenia)", Range = {70, 120}, Increment = 1, Suffix = "FOV", CurrentValue = 70, Flag = "FOV",
+   Callback = function(Value)
+        workspace.CurrentCamera.FieldOfView = Value
+   end,
+})
+
+TabRivals:CreateSection("🧲 Kontrola Innych Graczy")
+
+local RivalsDropdown = TabRivals:CreateDropdown({
+   Name = "Wybierz wroga", Options = pobierzGraczy(), CurrentOption = {""}, MultipleOptions = false, Flag = "RivalsDropdown",
+   Callback = function(Option) wybranyGracz = type(Option) == "table" and Option[1] or Option end,
+})
+TabRivals:CreateButton({ Name = "🔄 Odśwież listę wrogów", Callback = function() RivalsDropdown:Refresh(pobierzGraczy()) end })
+
+TabRivals:CreateButton({
+   Name = "🧲 TELEPORTUJ GRACZA DO SIEBIE (Bring)",
+   Callback = function()
+        if wybranyGracz then
+            local target = Players:FindFirstChild(wybranyGracz)
+            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                -- Teleportuje wroga 5 metrów przed Twoją twarz!
+                target.Character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -5)
+                Rayfield:Notify({Title = "Magia", Content = "Gracz przyciągnięty!", Duration = 2})
             end
         end
    end,
 })
 
 TabRivals:CreateButton({
-   Name = "⚡ Szybki Teleport za wroga",
+   Name = "🚀 Fling (Wyrzuć wroga w kosmos!)",
    Callback = function()
-        local targetHead = getNearestPlayer()
-        if targetHead and targetHead.Parent and targetHead.Parent:FindFirstChild("HumanoidRootPart") then
-            player.Character.HumanoidRootPart.CFrame = targetHead.Parent.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+        if wybranyGracz then
+            local target = Players:FindFirstChild(wybranyGracz)
+            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                local stareMiejsce = player.Character.HumanoidRootPart.CFrame
+                local bg = Instance.new("BodyAngularVelocity", player.Character.HumanoidRootPart)
+                bg.AngularVelocity = Vector3.new(0, 99999, 0)
+                bg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+                
+                player.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame
+                task.wait(0.5)
+                bg:Destroy()
+                player.Character.HumanoidRootPart.CFrame = stareMiejsce
+                Rayfield:Notify({Title = "Fling", Content = "Wróg wysłany na orbitę!", Duration = 2})
+            end
         end
    end,
 })
 
-Rayfield:Notify({Title = "planexd_0 Hub", Content = "Załadowano nową funkcję Magicznych Kul!", Duration = 5})
+Rayfield:Notify({Title = "planexd_0 Hub", Content = "Załadowano potężny update z zakładką Rivals!", Duration = 5})
