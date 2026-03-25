@@ -13,6 +13,7 @@ local Window = Rayfield:CreateWindow({
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local mouse = player:GetMouse()
+local Lighting = game:GetService("Lighting")
 local Flying = false
 local Speed = 50
 local bv
@@ -80,7 +81,6 @@ TabPoruszanie:CreateSlider({
    end,
 })
 
--- Obsługa klawisza F do latania
 mouse.KeyDown:Connect(function(key)
     if key:lower() == "f" then
         Flying = not Flying
@@ -93,7 +93,6 @@ end)
 local TabGracze = Window:CreateTab("Gracze", 4483362458)
 local SectionGracze = TabGracze:CreateSection("Interakcje z graczami")
 
--- Rozwijana lista graczy
 local PlayerDropdown = TabGracze:CreateDropdown({
    Name = "Wybierz cel",
    Options = pobierzGraczy(),
@@ -101,12 +100,10 @@ local PlayerDropdown = TabGracze:CreateDropdown({
    MultipleOptions = false,
    Flag = "DropdownGraczy",
    Callback = function(Option)
-        -- Rayfield zwraca tabelę, wyciągamy z niej pierwszy element
         wybranyGracz = type(Option) == "table" and Option[1] or Option
    end,
 })
 
--- Przycisk odświeżania listy (gdy ktoś dołączy do gry)
 TabGracze:CreateButton({
    Name = "🔄 Odśwież listę graczy",
    Callback = function()
@@ -114,29 +111,80 @@ TabGracze:CreateButton({
    end,
 })
 
--- Przycisk Teleportacji
 TabGracze:CreateButton({
    Name = "⚡ Teleportuj do gracza",
    Callback = function()
         if wybranyGracz then
             local target = Players:FindFirstChild(wybranyGracz)
             if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-                -- Teleportujemy naszą postać do postaci celu
-                player.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 2) -- Lądujemy minimalnie za jego plecami
-                
-                Rayfield:Notify({
-                   Title = "Sukces",
-                   Content = "Teleportowano do: " .. wybranyGracz,
-                   Duration = 3,
-                   Image = 4483362458,
-                })
-            else
-                Rayfield:Notify({Title = "Błąd", Content = "Gracz nie żyje lub nie można go znaleźć.", Duration = 3})
+                player.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 2)
             end
-        else
-            Rayfield:Notify({Title = "Uwaga", Content = "Najpierw wybierz gracza z listy!", Duration = 3})
         end
    end,
 })
 
-Rayfield:Notify({Title = "planexd_0 Script Hub", Content = "Wgrano najnowszą wersję z Teleportem!", Duration = 5})
+-- Zakładka 3: EXPLOIT (Czarne Niebo)
+local TabExploit = Window:CreateTab("Exploit", 4483362458)
+local SectionExploit = TabExploit:CreateSection("Modyfikacje Serwera")
+
+TabExploit:CreateButton({
+   Name = "🌌 Zmień niebo na CZARNE (7 sekund)",
+   Callback = function()
+        -- Zapisywanie oryginalnego stanu
+        local stareTime = Lighting.TimeOfDay
+        local starySky = Lighting:FindFirstChildOfClass("Sky")
+        
+        -- Zmiana na czarne
+        Lighting.TimeOfDay = "00:00:00"
+        Lighting.GlobalShadows = false
+        Lighting.Ambient = Color3.new(0, 0, 0)
+        
+        if starySky then starySky.Parent = nil end
+        
+        local czarneNiebo = Instance.new("Sky")
+        czarneNiebo.SkyboxBk = "rbxassetid://0"
+        czarneNiebo.SkyboxDn = "rbxassetid://0"
+        czarneNiebo.SkyboxFt = "rbxassetid://0"
+        czarneNiebo.SkyboxLf = "rbxassetid://0"
+        czarneNiebo.SkyboxRt = "rbxassetid://0"
+        czarneNiebo.SkyboxUp = "rbxassetid://0"
+        czarneNiebo.Parent = Lighting
+        
+        -- Exploit wysyłający sygnał do innych graczy przez luki w RemoteEvents
+        for _, v in pairs(game:GetDescendants()) do
+            if v:IsA("RemoteEvent") then
+                local nazwa = v.Name:lower()
+                if nazwa:match("light") or nazwa:match("sky") or nazwa:match("time") or nazwa:match("day") or nazwa:match("sync") then
+                    pcall(function() v:FireServer("00:00:00") end)
+                    pcall(function() v:FireServer(Color3.new(0,0,0)) end)
+                    pcall(function() v:FireServer(0) end)
+                end
+            end
+        end
+        
+        Rayfield:Notify({Title = "Exploit", Content = "Niebo zmienione na 7 sekund!", Duration = 2})
+        
+        -- Licznik 7 sekund i przywracanie
+        task.delay(7, function()
+            czarneNiebo:Destroy()
+            if starySky then starySky.Parent = Lighting end
+            Lighting.TimeOfDay = stareTime
+            Lighting.GlobalShadows = true
+            Lighting.Ambient = Color3.fromRGB(128, 128, 128)
+            
+            -- Wysłanie sygnału przywracającego do serwera
+            for _, v in pairs(game:GetDescendants()) do
+                if v:IsA("RemoteEvent") then
+                    local nazwa = v.Name:lower()
+                    if nazwa:match("light") or nazwa:match("sky") or nazwa:match("time") or nazwa:match("day") or nazwa:match("sync") then
+                        pcall(function() v:FireServer(stareTime) end)
+                        pcall(function() v:FireServer(14) end)
+                    end
+                end
+            end
+            Rayfield:Notify({Title = "Exploit", Content = "Niebo wróciło do normy.", Duration = 2})
+        end)
+   end,
+})
+
+Rayfield:Notify({Title = "planexd_0 Hub", Content = "Wgrano z zakładką Exploit!", Duration = 5})
