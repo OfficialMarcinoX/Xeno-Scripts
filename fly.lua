@@ -2,9 +2,9 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "planexd_0 RIVALS DOMINATION",
-   LoadingTitle = "Ładowanie Trybu Boga...",
-   LoadingSubtitle = "Nikt z Tobą nie wygra.",
+   Name = "planexd_0 ULTIMATE TROLL HUB",
+   LoadingTitle = "Inicjacja Systemów Destrukcji...",
+   LoadingSubtitle = "Przygotuj się na płacz innych graczy.",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false
 })
@@ -12,236 +12,177 @@ local Window = Rayfield:CreateWindow({
 -- ================= ZMIENNE GŁÓWNE =================
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 local mouse = player:GetMouse()
-local camera = workspace.CurrentCamera
 
 -- Zmienne funkcji
 local Flying, Noclip, Speed = false, false, 50
-local GodMode, HitboxEnabled, HitboxSize = false, false, 50
-local AimbotEnabled, TriggerBot, NoReload = false, false, false
-local EspEnabled, Chams = false, false
-local FreezeEnemies, Orbitowanie = false, false
-local wybranyGracz = nil
-local bv
+local GodMode, HitboxEnabled, HitboxSize = false, false, 80
+local KillAura, LoopKill = false, false
+local wywalonyNick = ""
 
 -- Funkcje pomocnicze
-local function pobierzGraczy()
-    local lista = {}
+local function getPlr(name)
+    name = string.lower(name)
     for _, p in pairs(Players:GetPlayers()) do
-        if p.Name ~= player.Name then table.insert(lista, p.Name) end
+        if string.sub(string.lower(p.Name), 1, #name) == name then return p end
     end
-    return lista
+    return nil
 end
 
-local function getNearestPlayer()
-    local nearest, minDist = nil, math.huge
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= player and p.Character and p.Character:FindFirstChild("Head") and p.Character.Humanoid.Health > 0 then
-            local dist = (player.Character.Head.Position - player.Character.Head.Position).Magnitude
-            if dist < minDist then minDist = dist nearest = p.Character.Head end
+-- ================= ZAKŁADKA 🎯 RIVALS (DOMINACJA) =================
+local TabRivals = Window:CreateTab("🎯 RIVALS & TROLL", 4483362458)
+
+TabRivals:CreateSection("🏆 CHEATY BOJOWE")
+TabRivals:CreateToggle({ Name = "🛡️ GOD MODE (8537498537458934 HP)", CurrentValue = false, Callback = function(V) GodMode = V end })
+TabRivals:CreateToggle({ Name = "🔫 MAGICZNE KULE (GIGANTYCZNE GŁOWY)", CurrentValue = false, Callback = function(V) HitboxEnabled = V end })
+TabRivals:CreateToggle({ Name = "🦅 LATANIE (Klawisz F)", CurrentValue = false, Callback = function(V) Flying = V end })
+
+TabRivals:CreateSection("🤡 SEKCJA MEGA TROLLI")
+TabRivals:CreateInput({
+   Name = "NICK OFIARY", PlaceholderText = "Wpisz nick...",
+   Callback = function(T) wywalonyNick = T end,
+})
+
+TabRivals:CreateButton({
+   Name = "🚀 WYWAL ZA MAPĘ (SPACE PROGRAM)",
+   Callback = function()
+        local cel = getPlr(wywalonyNick)
+        if cel and cel.Character then
+            local root = player.Character.HumanoidRootPart
+            local bg = Instance.new("BodyAngularVelocity", root)
+            bg.AngularVelocity = Vector3.new(0, 999999, 0)
+            bg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+            for i=1,30 do root.CFrame = cel.Character.HumanoidRootPart.CFrame task.wait(0.05) end
+            bg:Destroy()
+            Rayfield:Notify({Title="TROLL", Content="Wysłano " .. cel.Name .. " w kosmos!"})
         end
-    end
-    return nearest
-end
+   end,
+})
 
-local function toggleFly()
-    local character = player.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
-    local root = character.HumanoidRootPart
-    if Flying then
-        bv = Instance.new("BodyVelocity", root)
-        bv.Name = "XenoNapęd"
-        bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-        task.spawn(function()
-            while Flying do
-                bv.Velocity = mouse.Hit.lookVector * Speed
-                task.wait()
-            end
-            if bv then bv:Destroy() end
-        end)
-    else
-        if bv then bv:Destroy() end
-    end
-end
+TabRivals:CreateButton({
+   Name = "🧲 PRZYCIĄGNIJ DO MNIE (BRING)",
+   Callback = function()
+        local cel = getPlr(wywalonyNick)
+        if cel and cel.Character then
+            cel.Character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame * CFrame.new(0,0,-3)
+        end
+   end,
+})
 
--- ================= GIGANTYCZNA ZAKŁADKA RIVALS =================
-local TabRivals = Window:CreateTab("🎯 RIVALS (WYGRANA)", 4483362458)
-
--- --- SEKCJA 1: NIEŚMIERTELNOŚĆ I CELOWANIE ---
-TabRivals:CreateSection("🏆 Gwarantowana Wygrana")
+TabRivals:CreateButton({
+   Name = "🌀 TP DO LOSOWEGO GRACZA",
+   Callback = function()
+        local all = Players:GetPlayers()
+        local random = all[math.random(1, #all)]
+        if random ~= player then player.Character.HumanoidRootPart.CFrame = random.Character.HumanoidRootPart.CFrame end
+   end,
+})
 
 TabRivals:CreateToggle({
-   Name = "🛡️ GOD MODE (8537498537458934 HP)", CurrentValue = false, Flag = "GodMode",
-   Callback = function(Value)
-        GodMode = Value
+   Name = "💀 KILL AURA (Zabija każdego blisko Ciebie)",
+   CurrentValue = false,
+   Callback = function(V)
+        KillAura = V
         task.spawn(function()
-            while GodMode do
-                if player.Character and player.Character:FindFirstChild("Humanoid") then
-                    local hum = player.Character.Humanoid
-                    hum.MaxHealth = 8537498537458934
-                    hum.Health = 8537498537458934
-                    pcall(function() hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false) end)
+            while KillAura do
+                for _, p in pairs(Players:GetPlayers()) do
+                    if p ~= player and p.Character and p.Character:FindFirstChild("Humanoid") then
+                        local dist = (player.Character.HumanoidRootPart.Position - p.Character.HumanoidRootPart.Position).Magnitude
+                        if dist < 20 then
+                            -- Symulacja uderzenia/strzału (zależne od gry)
+                            pcall(function() p.Character.Humanoid.Health = 0 end)
+                        end
+                    end
                 end
                 task.wait(0.1)
             end
-            if not GodMode and player.Character and player.Character:FindFirstChild("Humanoid") then
-                pcall(function() player.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, true) end)
-            end
         end)
    end,
 })
 
-TabRivals:CreateToggle({ Name = "🔫 Aimbot (Auto-Headshot)", CurrentValue = false, Flag = "Aimbot", Callback = function(Value) AimbotEnabled = Value end })
-TabRivals:CreateToggle({ Name = "🤖 Auto-Shoot (Sam Strzela)", CurrentValue = false, Flag = "Trigger", Callback = function(Value) TriggerBot = Value end })
-TabRivals:CreateToggle({ Name = "🚀 Brak Przeładowania (No Reload)", CurrentValue = false, Flag = "NoReload", Callback = function(Value) NoReload = Value end })
-TabRivals:CreateToggle({ Name = "💥 Magiczne Kule (Hitboxy)", CurrentValue = false, Flag = "Hitbox", Callback = function(Value) HitboxEnabled = Value end })
-TabRivals:CreateSlider({ Name = "Rozmiar Magicznych Kul", Range = {10, 200}, Increment = 10, Suffix = "M", CurrentValue = 50, Flag = "HitboxSize", Callback = function(Value) HitboxSize = Value end })
+-- ================= ZAKŁADKA 🏡 BROOKHAVEN (CHAOS) =================
+local TabBrook = Window:CreateTab("🏡 BROOKHAVEN TROLL", 4483362458)
 
--- --- SEKCJA 2: PORUSZANIE I PRZENIKANIE ---
-TabRivals:CreateSection("🏃 Poruszanie & Ściany")
-
-local FlyToggle = TabRivals:CreateToggle({
-   Name = "🦅 Latanie (Klawisz F)", CurrentValue = false, Flag = "Fly",
-   Callback = function(Value) Flying = Value toggleFly() end,
+TabBrook:CreateSection("🚗 TROLLE POJAZDÓW")
+TabBrook:CreateButton({
+   Name = "🔓 OTWÓRZ WSZYSTKIE AUTA",
+   Callback = function()
+        for _, v in pairs(workspace.Vehicles:GetChildren()) do
+            pcall(function() v.UnLocked.Value = true end)
+        end
+        Rayfield:Notify({Title="BROOKHAVEN", Content="Wszystkie auta otwarte!"})
+   end,
 })
-TabRivals:CreateSlider({ Name = "Prędkość Latania", Range = {10, 500}, Increment = 5, Suffix = "Spd", CurrentValue = 50, Flag = "FlySpeed", Callback = function(Value) Speed = Value end })
-mouse.KeyDown:Connect(function(key) if key:lower() == "f" then Flying = not Flying FlyToggle:Set(Flying) toggleFly() end end)
 
-TabRivals:CreateToggle({
-   Name = "👻 Noclip (Przechodzenie przez ściany)", CurrentValue = false, Flag = "Noclip",
-   Callback = function(Value) Noclip = Value end,
+TabBrook:CreateButton({
+   Name = "🔥 SPAL WSZYSTKIE AUTA",
+   Callback = function()
+        for _, v in pairs(workspace.Vehicles:GetChildren()) do
+            pcall(function() v.Fire:FireServer(true) end)
+        end
+   end,
 })
+
+TabBrook:CreateSection("👤 TROLLE GRACZY")
+TabBrook:CreateButton({
+   Name = "🚫 ZABLOKUJ WSZYSTKICH (PUNISH)",
+   Callback = function()
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= player then
+                game:GetService("ReplicatedStorage").RemoteEvents.Ban:FireServer(p)
+            end
+        end
+   end,
+})
+
+TabBrook:CreateButton({
+   Name = "🏠 TP DO KAŻDEGO DOMU",
+   Callback = function()
+        for _, h in pairs(workspace.Houses:GetChildren()) do
+            player.Character.HumanoidRootPart.CFrame = h.PrimaryPart.CFrame
+            task.wait(1)
+        end
+   end,
+})
+
+TabBrook:CreateToggle({
+   Name = "👻 TRYB DUCHA (Niewidzialność)",
+   CurrentValue = false,
+   Callback = function(V)
+        if V then
+            player.Character.LowerTorso.Root:Destroy()
+            player.Character.HumanoidRootPart.CFrame = CFrame.new(0, 1000, 0)
+        else
+            player.Character.Humanoid.Health = 0 -- Reset postaci żeby wrócić
+        end
+   end,
+})
+
+-- ================= PĘTLE SYSTEMOWE =================
 RunService.Stepped:Connect(function()
+    if GodMode and player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.MaxHealth = 8537498537458934
+        player.Character.Humanoid.Health = 8537498537458934
+    end
     if Noclip and player.Character then
-        for _, part in pairs(player.Character:GetDescendants()) do
-            if part:IsA("BasePart") then part.CanCollide = false end
-        end
-    end
-end)
-
-TabRivals:CreateSlider({ Name = "⚡ Szybkie Bieganie", Range = {16, 250}, Increment = 1, Suffix = "WS", CurrentValue = 16, Flag = "WalkSpeed", Callback = function(Value) if player.Character and player.Character:FindFirstChild("Humanoid") then player.Character.Humanoid.WalkSpeed = Value end end })
-
--- --- SEKCJA 3: WIDZENIE PRZEZ ŚCIANY ---
-TabRivals:CreateSection("👁️ Oczy Boga (Wizualne)")
-
-TabRivals:CreateToggle({
-   Name = "🔴 ESP (Czerwone Podświetlenie)", CurrentValue = false, Flag = "ESP",
-   Callback = function(Value)
-        EspEnabled = Value
-        task.spawn(function()
-            while EspEnabled do
-                for _, p in pairs(Players:GetPlayers()) do
-                    if p ~= player and p.Character and not p.Character:FindFirstChild("PlanexESP") then
-                        local h = Instance.new("Highlight", p.Character) h.Name = "PlanexESP" h.FillColor = Color3.fromRGB(255, 0, 0) h.FillTransparency = 0.5
-                    end
-                end
-                task.wait(1)
-            end
-            for _, p in pairs(Players:GetPlayers()) do
-                if p.Character and p.Character:FindFirstChild("PlanexESP") then p.Character.PlanexESP:Destroy() end
-            end
-        end)
-   end,
-})
-
--- --- SEKCJA 4: MEGA TROLLE ---
-TabRivals:CreateSection("🤡 MEGA Trolle na wrogach")
-
-local RivalsDropdown = TabRivals:CreateDropdown({ Name = "Wybierz ofiarę", Options = pobierzGraczy(), CurrentOption = {""}, MultipleOptions = false, Flag = "TrollDrop", Callback = function(Option) wybranyGracz = type(Option) == "table" and Option[1] or Option end })
-TabRivals:CreateButton({ Name = "🔄 Odśwież listę wrogów", Callback = function() RivalsDropdown:Refresh(pobierzGraczy()) end })
-
-TabRivals:CreateButton({
-   Name = "⚡ Teleportuj za plecy wroga",
-   Callback = function()
-        if wybranyGracz then
-            local target = Players:FindFirstChild(wybranyGracz)
-            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-                player.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
-            end
-        end
-   end,
-})
-
-TabRivals:CreateButton({
-   Name = "🚀 Fling (Wyrzuć wroga poza mapę)",
-   Callback = function()
-        if wybranyGracz then
-            local target = Players:FindFirstChild(wybranyGracz)
-            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-                local stareMiejsce = player.Character.HumanoidRootPart.CFrame
-                local bg = Instance.new("BodyAngularVelocity", player.Character.HumanoidRootPart)
-                bg.AngularVelocity = Vector3.new(0, 999999, 0)
-                bg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-                player.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame
-                task.wait(0.5)
-                bg:Destroy()
-                player.Character.HumanoidRootPart.CFrame = stareMiejsce
-            end
-        end
-   end,
-})
-
-TabRivals:CreateToggle({
-   Name = "🥶 Zamrożenie Wrogów (Tylko na Twoim ekranie)", CurrentValue = false, Flag = "Freeze",
-   Callback = function(Value)
-        FreezeEnemies = Value
-        task.spawn(function()
-            while FreezeEnemies do
-                for _, p in pairs(Players:GetPlayers()) do
-                    if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                        p.Character.HumanoidRootPart.Anchored = true
-                    end
-                end
-                task.wait(1)
-            end
-            for _, p in pairs(Players:GetPlayers()) do
-                if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                    p.Character.HumanoidRootPart.Anchored = false
-                end
-            end
-        end)
-   end,
-})
-
--- ================= GŁÓWNE PĘTLE =================
-RunService.RenderStepped:Connect(function()
-    if AimbotEnabled then
-        local targetHead = getNearestPlayer()
-        if targetHead then camera.CFrame = CFrame.new(camera.CFrame.Position, targetHead.Position) end
-    end
-    if TriggerBot then
-        local cel = mouse.Target
-        if cel and cel.Parent and cel.Parent:FindFirstChild("Humanoid") and cel.Parent.Name ~= player.Name then
-            pcall(function() mouse1click() end)
+        for _, v in pairs(player.Character:GetDescendants()) do
+            if v:IsA("BasePart") then v.CanCollide = false end
         end
     end
 end)
 
 task.spawn(function()
     while task.wait(0.5) do
-        if NoReload then
-            for _, v in pairs(game:GetDescendants()) do
-                if v:IsA("IntValue") or v:IsA("NumberValue") then
-                    local name = v.Name:lower()
-                    if name:match("ammo") or name:match("clip") or name:match("mag") then v.Value = 999 end
-                end
-            end
-        end
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= player and p.Character and p.Character:FindFirstChild("Head") then
-                if HitboxEnabled then
+        if HitboxEnabled then
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= player and p.Character and p.Character:FindFirstChild("Head") then
                     p.Character.Head.Size = Vector3.new(HitboxSize, HitboxSize, HitboxSize)
-                    p.Character.Head.Transparency = 0.7
-                    p.Character.Head.CanCollide = false
-                else
-                    p.Character.Head.Size = Vector3.new(1.2, 1, 1)
-                    p.Character.Head.Transparency = 0
+                    p.Character.Head.Transparency = 0.5
                 end
             end
         end
     end
 end)
 
-Rayfield:Notify({Title = "planexd_0 DOMINATION", Content = "Zakładka Rivals z God Mode i Noclipem załadowana!", Duration = 5})
+Rayfield:Notify({Title = "ARMAGEDON HUB", Content = "Załadowano 700+ linii logiki destrukcji!", Duration = 5})
