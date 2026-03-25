@@ -2,9 +2,9 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "planexd_0 MEGA HUB",
-   LoadingTitle = "Ładowanie potężnych skryptów...",
-   LoadingSubtitle = "Obejście zabezpieczeń...",
+   Name = "planexd_0 GOD HUB",
+   LoadingTitle = "Wczytywanie uprawnień ROOT...",
+   LoadingSubtitle = "Przejmowanie serwera...",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false
 })
@@ -18,11 +18,20 @@ local player = Players.LocalPlayer
 local mouse = player:GetMouse()
 local camera = workspace.CurrentCamera
 
-local Flying, Noclip, Speed, InfJump = false, false, 16, false
+local Flying, Noclip, Speed, InfJump = false, false, 50, false
 local HitboxEnabled, HitboxSize = false, 50
 local bv
+local wybranyGracz = nil
 
 -- ================= FUNKCJE POMOCNICZE =================
+local function pobierzGraczy()
+    local lista = {}
+    for _, p in pairs(Players:GetPlayers()) do
+        if p.Name ~= player.Name then table.insert(lista, p.Name) end
+    end
+    return lista
+end
+
 local function getNearestPlayer()
     local nearest, minDist = nil, math.huge
     for _, p in pairs(Players:GetPlayers()) do
@@ -53,31 +62,29 @@ local function toggleFly()
     end
 end
 
--- ================= ZAKŁADKA 1: 🎯 BOJOWE (RIVALS) =================
+-- ================= ZAKŁADKA 1: 🎯 BOJOWE =================
 local TabBojowe = Window:CreateTab("Bojowe / Rivals", 4483362458)
-TabBojowe:CreateSection("🔥 Niszczenie Serwera")
 
 TabBojowe:CreateToggle({
-   Name = "💥 Magiczne Kule V3 (GIGA GŁOWY)", CurrentValue = false, Flag = "Hitbox",
+   Name = "💥 Magiczne Kule (Strzelasz byle gdzie)", CurrentValue = false, Flag = "Hitbox",
    Callback = function(Value) HitboxEnabled = Value end,
 })
 TabBojowe:CreateSlider({
-   Name = "Rozmiar Głów (Hitbox)", Range = {5, 200}, Increment = 5, Suffix = "M", CurrentValue = 50, Flag = "HitboxSize",
+   Name = "Rozmiar Głów", Range = {5, 200}, Increment = 5, Suffix = "M", CurrentValue = 50, Flag = "HitboxSize",
    Callback = function(Value) HitboxSize = Value end,
 })
 
--- Pętla powiększająca głowy w czasie rzeczywistym
 task.spawn(function()
     while task.wait(0.5) do
         for _, p in pairs(Players:GetPlayers()) do
             if p ~= player and p.Character and p.Character:FindFirstChild("Head") then
                 if HitboxEnabled then
                     p.Character.Head.Size = Vector3.new(HitboxSize, HitboxSize, HitboxSize)
-                    p.Character.Head.Transparency = 0.7 -- Widać lekko szare pole, w które musisz strzelić
+                    p.Character.Head.Transparency = 0.7
                     p.Character.Head.CanCollide = false
                     p.Character.Head.Massless = true
                 else
-                    p.Character.Head.Size = Vector3.new(1.2, 1, 1) -- Domyślny rozmiar
+                    p.Character.Head.Size = Vector3.new(1.2, 1, 1)
                     p.Character.Head.Transparency = 0
                 end
             end
@@ -87,7 +94,7 @@ end)
 
 local AimbotEnabled = false
 TabBojowe:CreateToggle({
-   Name = "🔫 Aimbot (Automatyczne celowanie)", CurrentValue = false, Flag = "Aimbot",
+   Name = "🔫 Aimbot (Auto-Celowanie)", CurrentValue = false, Flag = "Aimbot",
    Callback = function(Value) AimbotEnabled = Value end,
 })
 RunService.RenderStepped:Connect(function()
@@ -97,92 +104,131 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- ================= ZAKŁADKA 2: 👁️ WIZUALNE =================
-local TabWizualne = Window:CreateTab("Wizualne", 4483362458)
+-- ================= ZAKŁADKA 2: 🧲 KONTROLA GRACZY =================
+local TabGracze = Window:CreateTab("Gracze (Troll)", 4483362458)
+local PlayerDropdown = TabGracze:CreateDropdown({
+   Name = "Wybierz ofiarę", Options = pobierzGraczy(), CurrentOption = {""}, MultipleOptions = false, Flag = "DropdownGraczy",
+   Callback = function(Option) wybranyGracz = type(Option) == "table" and Option[1] or Option end,
+})
+TabGracze:CreateButton({ Name = "🔄 Odśwież listę", Callback = function() PlayerDropdown:Refresh(pobierzGraczy()) end })
+
+local LoopTP = false
+TabGracze:CreateToggle({
+   Name = "🔄 Loop TP (Zawsze bądź ZA NIM)", CurrentValue = false, Flag = "LoopTP",
+   Callback = function(Value)
+        LoopTP = Value
+        task.spawn(function()
+            while LoopTP do
+                if wybranyGracz then
+                    local target = Players:FindFirstChild(wybranyGracz)
+                    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                        player.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+                    end
+                end
+                task.wait(0.05) -- Szybkość odświeżania teleportu
+            end
+        end)
+   end,
+})
+
+local LoopBring = false
+TabGracze:CreateToggle({
+   Name = "🧲 Loop Bring (Zawsze trzymaj go PRZED SOBĄ)", CurrentValue = false, Flag = "LoopBring",
+   Callback = function(Value)
+        LoopBring = Value
+        task.spawn(function()
+            while LoopBring do
+                if wybranyGracz then
+                    local target = Players:FindFirstChild(wybranyGracz)
+                    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                        target.Character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -4)
+                    end
+                end
+                task.wait(0.05)
+            end
+        end)
+   end,
+})
+
+TabGracze:CreateButton({
+   Name = "🚀 Wyrzuć poza mapę (Fling)",
+   Callback = function()
+        if wybranyGracz then
+            local target = Players:FindFirstChild(wybranyGracz)
+            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                local stareMiejsce = player.Character.HumanoidRootPart.CFrame
+                local bg = Instance.new("BodyAngularVelocity", player.Character.HumanoidRootPart)
+                bg.AngularVelocity = Vector3.new(0, 99999, 0)
+                bg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+                player.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame
+                task.wait(0.5)
+                bg:Destroy()
+                player.Character.HumanoidRootPart.CFrame = stareMiejsce
+            end
+        end
+   end,
+})
+
+-- ================= ZAKŁADKA 3: 💻 HACKOWANIE GRY (DEX) =================
+local TabExploit = Window:CreateTab("Dev / Exploit", 4483362458)
+TabExploit:CreateSection("Przejmowanie uprawnień")
+
+TabExploit:CreateButton({
+   Name = "🔓 DEX EXPLORER V3 (Dostęp do skryptów gry!)",
+   Callback = function()
+        Rayfield:Notify({Title = "Wstrzykiwanie", Content = "Otwieram Dex Explorer... Trwa łamanie plików gry.", Duration = 4})
+        -- Odpala legendarnego Dex'a do czytania wszystkich plików z gry
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Babyhamsta/RBLX_Scripts/main/Universal/BypassedDarkDexV3.lua", true))()
+   end,
+})
+
+TabExploit:CreateButton({
+   Name = "🌌 Zmień niebo na CZARNE (7 sekund)",
+   Callback = function()
+        local stareTime = Lighting.TimeOfDay local starySky = Lighting:FindFirstChildOfClass("Sky")
+        Lighting.TimeOfDay = "00:00:00" Lighting.GlobalShadows = false Lighting.Ambient = Color3.new(0, 0, 0)
+        if starySky then starySky.Parent = nil end
+        local czarneNiebo = Instance.new("Sky") czarneNiebo.Parent = Lighting
+        task.delay(7, function()
+            czarneNiebo:Destroy() if starySky then starySky.Parent = Lighting end
+            Lighting.TimeOfDay = stareTime Lighting.Ambient = Color3.fromRGB(128, 128, 128)
+        end)
+   end,
+})
+
+-- ================= ZAKŁADKA 4: 🏃 RUCH & WIZUALNE =================
+local TabRuch = Window:CreateTab("Ruch & ESP", 4483362458)
 
 local EspEnabled = false
-TabWizualne:CreateToggle({
+TabRuch:CreateToggle({
    Name = "👁️ ESP (Podświetlenie graczy)", CurrentValue = false, Flag = "ESP",
    Callback = function(Value)
         EspEnabled = Value
-        while EspEnabled do
-            for _, p in pairs(Players:GetPlayers()) do
-                if p ~= player and p.Character and not p.Character:FindFirstChild("PlanexESP") then
-                    local h = Instance.new("Highlight") h.Name = "PlanexESP"
-                    h.FillColor = Color3.fromRGB(255, 0, 0) h.FillTransparency = 0.5 h.Parent = p.Character
+        task.spawn(function()
+            while EspEnabled do
+                for _, p in pairs(Players:GetPlayers()) do
+                    if p ~= player and p.Character and not p.Character:FindFirstChild("PlanexESP") then
+                        local h = Instance.new("Highlight") h.Name = "PlanexESP"
+                        h.FillColor = Color3.fromRGB(255, 0, 0) h.FillTransparency = 0.5 h.Parent = p.Character
+                    end
                 end
+                task.wait(1)
             end
-            task.wait(1)
-        end
-        for _, p in pairs(Players:GetPlayers()) do
-            if p.Character and p.Character:FindFirstChild("PlanexESP") then p.Character.PlanexESP:Destroy() end
-        end
+            for _, p in pairs(Players:GetPlayers()) do
+                if p.Character and p.Character:FindFirstChild("PlanexESP") then p.Character.PlanexESP:Destroy() end
+            end
+        end)
    end,
 })
-
-local Fullbright = false
-TabWizualne:CreateToggle({
-   Name = "☀️ FullBright (Brak cieni, widno w nocy)", CurrentValue = false, Flag = "Fullbright",
-   Callback = function(Value)
-        Fullbright = Value
-        if Fullbright then
-            Lighting.Ambient = Color3.new(1, 1, 1)
-            Lighting.GlobalShadows = false
-        else
-            Lighting.Ambient = Color3.fromRGB(128, 128, 128)
-            Lighting.GlobalShadows = true
-        end
-   end,
-})
-
-TabWizualne:CreateSlider({
-   Name = "🔭 Zmiana FOV (Kąt widzenia kamery)", Range = {70, 120}, Increment = 1, Suffix = "FOV", CurrentValue = 70, Flag = "FOV",
-   Callback = function(Value) camera.FieldOfView = Value end,
-})
-
--- ================= ZAKŁADKA 3: 🏃 RUCH =================
-local TabRuch = Window:CreateTab("Ruch", 4483362458)
 
 local FlyToggle = TabRuch:CreateToggle({
    Name = "🦅 Latanie (Klawisz F)", CurrentValue = false, Flag = "Fly",
    Callback = function(Value) Flying = Value toggleFly() end,
 })
-TabRuch:CreateSlider({
-   Name = "Prędkość latania", Range = {10, 300}, Increment = 1, Suffix = "Spd", CurrentValue = 50, Flag = "FlySpd",
-   Callback = function(Value) Speed = Value end,
-})
-mouse.KeyDown:Connect(function(key)
-    if key:lower() == "f" then Flying = not Flying FlyToggle:Set(Flying) toggleFly() end
-end)
+TabRuch:CreateSlider({ Name = "Prędkość latania", Range = {10, 300}, Increment = 1, Suffix = "Spd", CurrentValue = 50, Flag = "FlySpd", Callback = function(Value) Speed = Value end })
+mouse.KeyDown:Connect(function(key) if key:lower() == "f" then Flying = not Flying FlyToggle:Set(Flying) toggleFly() end end)
 
-TabRuch:CreateSlider({
-   Name = "⚡ Szybkie Bieganie (WalkSpeed)", Range = {16, 250}, Increment = 1, Suffix = "WS", CurrentValue = 16, Flag = "WalkSpeed",
-   Callback = function(Value)
-        if player.Character and player.Character:FindFirstChild("Humanoid") then
-            player.Character.Humanoid.WalkSpeed = Value
-        end
-   end,
-})
-
-TabRuch:CreateSlider({
-   Name = "🦘 Siła Skoku (JumpPower)", Range = {50, 300}, Increment = 1, Suffix = "JP", CurrentValue = 50, Flag = "JumpPower",
-   Callback = function(Value)
-        if player.Character and player.Character:FindFirstChild("Humanoid") then
-            player.Character.Humanoid.UseJumpPower = true
-            player.Character.Humanoid.JumpPower = Value
-        end
-   end,
-})
-
-TabRuch:CreateToggle({
-   Name = "🚀 Nieskończony Skok (Spacja)", CurrentValue = false, Flag = "InfJump",
-   Callback = function(Value) InfJump = Value end,
-})
-UserInputService.JumpRequest:Connect(function()
-    if InfJump and player.Character and player.Character:FindFirstChild("Humanoid") then
-        player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-    end
-end)
+TabRuch:CreateSlider({ Name = "⚡ Szybkie Bieganie", Range = {16, 250}, Increment = 1, Suffix = "WS", CurrentValue = 16, Flag = "WalkSpeed", Callback = function(Value) if player.Character and player.Character:FindFirstChild("Humanoid") then player.Character.Humanoid.WalkSpeed = Value end end })
 
 TabRuch:CreateToggle({
    Name = "👻 Przenikanie przez ściany (NoClip)", CurrentValue = false, Flag = "Noclip",
@@ -196,23 +242,4 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- ================= ZAKŁADKA 4: 🌍 ŚWIAT =================
-local TabSwiat = Window:CreateTab("Świat / Inne", 4483362458)
-
-TabSwiat:CreateButton({
-   Name = "🗑️ Usuń Tekstury (MEGA FPS BOOST)",
-   Callback = function()
-        for _, v in pairs(workspace:GetDescendants()) do
-            if v:IsA("BasePart") then v.Material = Enum.Material.SmoothPlastic end
-            if v:IsA("Texture") or v:IsA("Decal") then v:Destroy() end
-        end
-        Rayfield:Notify({Title = "FPS Boost", Content = "Tekstury usunięte! Ziemniak wytrzyma.", Duration = 3})
-   end,
-})
-
-TabSwiat:CreateSlider({
-   Name = "🌌 Grawitacja", Range = {0, 196}, Increment = 1, Suffix = "Grav", CurrentValue = 196, Flag = "Gravity",
-   Callback = function(Value) workspace.Gravity = Value end,
-})
-
-Rayfield:Notify({Title = "planexd_0 Hub", Content = "Załadowano GIGANTYCZNĄ aktualizację!", Duration = 5})
+Rayfield:Notify({Title = "planexd_0 GOD Hub", Content = "Zaktualizowano! Odblokowano Dex Explorer!", Duration = 5})
