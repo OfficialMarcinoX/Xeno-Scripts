@@ -1,57 +1,71 @@
---[[
-    Xeno Fly Script - Wersja Polska
-    Instrukcja: Naciśnij "F", aby latać.
-]]
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+local Window = OrionLib:MakeWindow({Name = "Xeno Fly Menu", HidePremium = false, SaveConfig = true, ConfigFolder = "XenoConfig"})
 
-local gracz = game.Players.LocalPlayer
-local mysz = gracz:GetMouse()
-local postac = gracz.Character or gracz.CharacterAdded:Wait()
-local root = postac:WaitForChild("HumanoidRootPart")
+local Flying = false
+local Speed = 50
+local player = game.Players.LocalPlayer
+local mouse = player:GetMouse()
+local bv
 
-local czyLata = false
-local predkosc = 70 -- Tutaj możesz zmienić szybkość latania
-
--- Funkcja powiadomienia (GUI)
-local function powiadomienie(tytul, tekst)
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = tytul;
-        Text = tekst;
-        Duration = 5;
-    })
-end
-
-powiadomienie("Xeno Fly", "Skrypt załadowany! Naciśnij 'F' aby zacząć.")
-
--- Główna funkcja latania
-function przelaczLatanie()
-    czyLata = not czyLata
+-- Funkcja latania
+local function toggleFly()
+    local character = player.Character
+    local root = character:FindFirstChild("HumanoidRootPart")
     
-    if czyLata then
-        -- Tworzymy siłę, która utrzymuje nas w powietrzu
-        local bv = Instance.new("BodyVelocity")
+    if Flying then
+        bv = Instance.new("BodyVelocity")
         bv.Name = "XenoNapęd"
         bv.Parent = root
         bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-        bv.Velocity = Vector3.new(0, 0, 0)
         
-        -- Pętla ruchu
         task.spawn(function()
-            while czyLata do
-                -- Lata tam, gdzie patrzy Twoja myszka
-                bv.Velocity = mysz.Hit.lookVector * predkosc
+            while Flying do
+                bv.Velocity = mouse.Hit.lookVector * Speed
                 task.wait()
             end
-            bv:Destroy()
+            if bv then bv:Destroy() end
         end)
-        print("Latanie: WŁĄCZONE")
     else
-        print("Latanie: WYŁĄCZONE")
+        if bv then bv:Destroy() end
     end
 end
 
+-- Zakładka w Menu
+local Tab = Window:MakeTab({
+	Name = "Główne",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+})
+
+Tab:AddToggle({
+	Name = "Latanie (Klawisz F)",
+	Default = false,
+	Callback = function(Value)
+		Flying = Value
+		toggleFly()
+	end    
+})
+
+Tab:AddSlider({
+	Name = "Prędkość",
+	Min = 10,
+	Max = 300,
+	Default = 50,
+	Color = Color3.fromRGB(255,255,255),
+	Increment = 1,
+	ValueName = "Szybkość",
+	Callback = function(Value)
+		Speed = Value
+	end    
+})
+
 -- Obsługa klawisza F
-mysz.KeyDown:Connect(function(klawisz)
-    if klawisz:lower() == "f" then
-        przelaczLatanie()
+mouse.KeyDown:Connect(function(key)
+    if key:lower() == "f" then
+        Flying = not Flying
+        OrionLib:MakeNotification({Name = "Xeno Fly", Content = "Latanie: " .. (Flying and "WŁĄCZONE" or "WYŁĄCZONE"), Time = 2})
+        toggleFly()
     end
 end)
+
+OrionLib:Init()
