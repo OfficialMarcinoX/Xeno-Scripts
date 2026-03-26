@@ -1,161 +1,117 @@
 --[[ 
-    Rivals Multi-Hack | Zoptymalizowane pod Xeno
-    GitHub: OfficialMarcinoX
-    Features: Aimbot, Mega Fly (F), NoClip, TP
+    MARCINOX CUSTOM GUI - XENO EDITION
+    Reverse-Engineered Style UI
 ]]
 
--- Ładowanie biblioteki z poprawką na czas oczekiwania
-local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+local ScreenGui = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local Title = Instance.new("TextLabel")
+local FlyBtn = Instance.new("TextButton")
+local AimBtn = Instance.new("TextButton")
+local SpeedSlider = Instance.new("TextBox")
+local Status = Instance.new("TextLabel")
 
--- Tworzenie Okna (Zapewnienie widoczności)
-local Window = OrionLib:MakeWindow({
-    Name = "Rivals Hub | Xeno Edition", 
-    HidePremium = false, 
-    SaveConfig = true, 
-    ConfigFolder = "XenoRivals",
-    IntroEnabled = true,
-    IntroText = "Wczytywanie Xeno Hub..."
-})
+-- Konfiguracja GUI (Przesuwne i Widoczne)
+ScreenGui.Name = "MarcinoX_Hub"
+ScreenGui.Parent = game:GetService("CoreGui") -- Ukryte przed skanowaniem gry
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- Zmienne
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainFrame.BorderSizePixel = 2
+MainFrame.Position = UDim2.new(0.1, 0, 0.1, 0)
+MainFrame.Size = UDim2.new(0, 200, 0, 250)
+MainFrame.Active = true
+MainFrame.Draggable = true -- Można przesuwać!
 
--- Ustawienia globalne
-_G.AimbotEnabled = false
-_G.NoClipEnabled = false
-_G.FlyEnabled = false
-_G.FlySpeed = 250
+Title.Parent = MainFrame
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.Text = "XENO - MARCINOX"
+Title.TextColor3 = Color3.fromRGB(0, 255, 0)
+Title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 
--- ==========================================
--- ZAKŁADKA: RIVALS (Aimbot)
--- ==========================================
-local CombatTab = Window:MakeTab({Name = "Rivals", Icon = "rbxassetid://4483345998", PremiumOnly = false})
+-- Funkcje Logiczne
+local Flying = false
+local Aimbot = false
+local Speed = 250
 
-CombatTab:AddToggle({
-	Name = "Aimbot (Auto-Lock)",
-	Default = false,
-	Callback = function(Value)
-		_G.AimbotEnabled = Value
-	end    
-})
+-- Przycisk FLY (Klawisz F też działa)
+FlyBtn.Parent = MainFrame
+FlyBtn.Position = UDim2.new(0.1, 0, 0.2, 0)
+FlyBtn.Size = UDim2.new(0.8, 0, 0, 40)
+FlyBtn.Text = "FLY (F): OFF"
+FlyBtn.BackgroundColor3 = Color3.fromRGB(60, 0, 0)
 
-RunService.RenderStepped:Connect(function()
-    if _G.AimbotEnabled then
-        local ClosestPlayer = nil
-        local ShortestDistance = math.huge
-        for _, v in pairs(Players:GetPlayers()) do
-            if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") and v.Team ~= LocalPlayer.Team then
-                local ScreenPos, OnScreen = Camera:WorldToViewportPoint(v.Character.HumanoidRootPart.Position)
-                if OnScreen then
-                    local MousePos = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-                    local Distance = (Vector2.new(ScreenPos.X, ScreenPos.Y) - MousePos).Magnitude
-                    if Distance < ShortestDistance then
-                        ClosestPlayer = v
-                        ShortestDistance = Distance
-                    end
+-- Funkcja Mega Fly
+local function ToggleFly()
+    Flying = not Flying
+    FlyBtn.Text = Flying and "FLY: ON" or "FLY: OFF"
+    FlyBtn.BackgroundColor3 = Flying and Color3.fromRGB(0, 100, 0) or Color3.fromRGB(60, 0, 0)
+    
+    local Character = game.Players.LocalPlayer.Character
+    if Flying and Character then
+        local Root = Character:FindFirstChild("HumanoidRootPart")
+        local BV = Instance.new("BodyVelocity", Root)
+        BV.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+        
+        task.spawn(function()
+            while Flying do
+                local Dir = workspace.CurrentCamera.CFrame.LookVector
+                if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.W) then
+                    BV.Velocity = Dir * Speed
+                else
+                    BV.Velocity = Vector3.new(0, 0, 0)
+                end
+                task.wait()
+            end
+            BV:Destroy()
+        end)
+    end
+end
+
+FlyBtn.MouseButton1Click:Connect(ToggleFly)
+
+-- Obsługa klawisza F (Globalna)
+game:GetService("UserInputService").InputBegan:Connect(function(i, g)
+    if not g and i.KeyCode == Enum.KeyCode.F then ToggleFly() end
+end)
+
+-- Przycisk AIMBOT
+AimBtn.Parent = MainFrame
+AimBtn.Position = UDim2.new(0.1, 0, 0.45, 0)
+AimBtn.Size = UDim2.new(0.8, 0, 0, 40)
+AimBtn.Text = "AIMBOT: OFF"
+
+AimBtn.MouseButton1Click:Connect(function()
+    Aimbot = not Aimbot
+    AimBtn.Text = Aimbot and "AIMBOT: ON" or "AIMBOT: OFF"
+end)
+
+-- Pętla Aimbota (Rivals)
+game:GetService("RunService").RenderStepped:Connect(function()
+    if Aimbot then
+        local target = nil
+        local dist = 1000
+        for _, p in pairs(game.Players:GetPlayers()) do
+            if p ~= game.Players.LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
+                local d = (p.Character.Head.Position - game.Players.LocalPlayer.Character.Head.Position).Magnitude
+                if d < dist then
+                    dist = d
+                    target = p
                 end
             end
         end
-        if ClosestPlayer then
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, ClosestPlayer.Character.HumanoidRootPart.Position)
+        if target then
+            workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, target.Character.Head.Position)
         end
     end
 end)
 
--- ==========================================
--- ZAKŁADKA: MOVEMENT (Fly, NoClip)
--- ==========================================
-local MoveTab = Window:MakeTab({Name = "Movement", Icon = "rbxassetid://4483362458", PremiumOnly = false})
-
-local BodyGyro, BodyVelocity
-
-local function StartFly()
-    local Character = LocalPlayer.Character
-    if not Character or not Character:FindFirstChild("HumanoidRootPart") then return end
-    local Root = Character.HumanoidRootPart
-    
-    BodyGyro = Instance.new("BodyGyro", Root)
-    BodyGyro.P = 9e4
-    BodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-    BodyGyro.CFrame = Root.CFrame
-    
-    BodyVelocity = Instance.new("BodyVelocity", Root)
-    BodyVelocity.Velocity = Vector3.new(0, 0, 0)
-    BodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-    
-    Character.Humanoid.PlatformStand = true
-    
-    task.spawn(function()
-        while _G.FlyEnabled and Character:FindFirstChild("HumanoidRootPart") do
-            local Direction = Vector3.new(0, 0, 0)
-            local CamCF = Camera.CFrame
-            
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then Direction = Direction + CamCF.LookVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then Direction = Direction - CamCF.LookVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) then Direction = Direction - CamCF.RightVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then Direction = Direction + CamCF.RightVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then Direction = Direction + Vector3.new(0, 1, 0) end
-            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then Direction = Direction - Vector3.new(0, 1, 0) end
-            
-            BodyVelocity.Velocity = Direction * _G.FlySpeed
-            BodyGyro.CFrame = CamCF
-            RunService.RenderStepped:Wait()
-        end
-    end)
-end
-
-local function StopFly()
-    if BodyGyro then BodyGyro:Destroy() end
-    if BodyVelocity then BodyVelocity:Destroy() end
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-        LocalPlayer.Character.Humanoid.PlatformStand = false
-    end
-end
-
--- Obsługa klawisza F
-UserInputService.InputBegan:Connect(function(input, gpe)
-    if gpe then return end
-    if input.KeyCode == Enum.KeyCode.F then
-        _G.FlyEnabled = not _G.FlyEnabled
-        if _G.FlyEnabled then StartFly() else StopFly() end
-        OrionLib:MakeNotification({Name = "System", Content = "Fly: " .. tostring(_G.FlyEnabled), Time = 1})
-    end
-end)
-
-MoveTab:AddToggle({
-	Name = "Mega Fly (Klawisz F)",
-	Default = false,
-	Callback = function(Value)
-		_G.FlyEnabled = Value
-        if _G.FlyEnabled then StartFly() else StopFly() end
-	end    
-})
-
-MoveTab:AddSlider({
-	Name = "Prędkość Lotu",
-	Min = 50,
-	Max = 1000,
-	Default = 250,
-	Callback = function(Value) _G.FlySpeed = Value end    
-})
-
-MoveTab:AddToggle({
-	Name = "NoClip (Przez ściany)",
-	Default = false,
-	Callback = function(Value) _G.NoClipEnabled = Value end    
-})
-
-RunService.Stepped:Connect(function()
-    if _G.NoClipEnabled and LocalPlayer.Character then
-        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-            if part:IsA("BasePart") then part.CanCollide = false end
-        end
-    end
-end)
-
--- Inicjalizacja końcowa
-OrionLib:Init()
+-- Status
+Status.Parent = MainFrame
+Status.Position = UDim2.new(0, 0, 0.9, 0)
+Status.Size = UDim2.new(1, 0, 0, 20)
+Status.Text = "Zasilane przez Reverse System"
+Status.TextColor3 = Color3.fromRGB(150, 150, 150)
+Status.BackgroundTransparency = 1
