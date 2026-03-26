@@ -1,5 +1,5 @@
 --[[ 
-    XENO RIVALS HUB | ANTI-KICK CFRAME EDITION
+    XENO GOD HUB | MULTI-GAME EDITION
     GitHub: OfficialMarcinoX
 ]]
 
@@ -7,19 +7,17 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
    Name = "Xeno | OfficialMarcinoX HUB",
-   LoadingTitle = "Ładowanie Bezpiecznego Skryptu...",
-   LoadingSubtitle = "Rivals Anti-Kick",
+   LoadingTitle = "Ładowanie Systemu...",
+   LoadingSubtitle = "Zalogowano jako: planexd_0",
    ConfigurationSaving = { Enabled = false }
 })
 
--- Bezpieczne zmienne (zamiast _G)
+-- ==========================================
+-- GŁÓWNE ZMIENNE
+-- ==========================================
 local State = {
-    Aimbot = false,
-    AutoShoot = false,
-    Fly = false,
-    NoClip = false,
-    ESP = false,
-    FlySpeed = 150 -- Zmniejszony bazowy dla CFrame (działa inaczej niż Velocity)
+    Aimbot = false, AutoShoot = false, Fly = false,
+    NoClip = false, ESP = false, FlySpeed = 150
 }
 
 local Players = game:GetService("Players")
@@ -29,7 +27,7 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
 -- ==========================================
--- GUI
+-- ZAKŁADKA 1: RIVALS CHEATS
 -- ==========================================
 local RivalsTab = Window:CreateTab("Rivals Cheats", 4483345998)
 
@@ -50,12 +48,8 @@ RivalsTab:CreateToggle({
    CurrentValue = false,
    Callback = function(Value) 
        State.Fly = Value 
-       local Char = LocalPlayer.Character
-       if Char and Char:FindFirstChild("HumanoidRootPart") then
-           -- Kiedy wyłączamy fly, odkotwiczamy postać, żeby normalnie spadła
-           if not State.Fly then
-               Char.HumanoidRootPart.Anchored = false
-           end
+       if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+           if not State.Fly then LocalPlayer.Character.HumanoidRootPart.Anchored = false end
        end
    end,
 })
@@ -74,27 +68,99 @@ RivalsTab:CreateToggle({
 
 RivalsTab:CreateSlider({
    Name = "Prędkość (Fly/Speed)",
-   Min = 10,
-   Max = 500,
-   CurrentValue = 150,
+   Min = 10, Max = 500, CurrentValue = 150,
    Callback = function(Value) State.FlySpeed = Value end,
 })
 
 -- ==========================================
--- LOGIKA (ZABEZPIECZONA)
+-- ZAKŁADKA 2: 99 NOCY W LESIE (SURVIVAL)
+-- ==========================================
+local ForestTab = Window:CreateTab("99 Nocy w Lesie", 4483362458)
+
+ForestTab:CreateButton({
+   Name = "Zabij wszystkie zwierzęta (Moby)",
+   Callback = function()
+       local killed = 0
+       -- Skanuje całą mapę w poszukiwaniu "Humanoidów", które nie są graczami
+       for _, v in pairs(workspace:GetDescendants()) do
+           if v:IsA("Model") and v:FindFirstChild("Humanoid") then
+               if not Players:GetPlayerFromCharacter(v) then
+                   v.Humanoid.Health = 0
+                   killed = killed + 1
+               end
+           end
+       end
+       Rayfield:Notify({Title = "Sukces!", Content = "Zabito " .. killed .. " zwierząt/mobów.", Duration = 3})
+   end,
+})
+
+ForestTab:CreateButton({
+   Name = "Teleportuj do Skrzynki / Bazy",
+   Callback = function()
+       local found = false
+       local Root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+       if Root then
+           -- Szuka na mapie obiektów o nazwie chest, skrzynka, storage itp.
+           for _, v in pairs(workspace:GetDescendants()) do
+               local name = string.lower(v.Name)
+               if name:match("chest") or name:match("skrzyn") or name:match("storage") or name:match("box") then
+                   if v:IsA("BasePart") then
+                       Root.CFrame = v.CFrame * CFrame.new(0, 3, 0)
+                       found = true
+                       break
+                   elseif v:IsA("Model") and v.PrimaryPart then
+                       Root.CFrame = v.PrimaryPart.CFrame * CFrame.new(0, 3, 0)
+                       found = true
+                       break
+                   end
+               end
+           end
+       end
+       if not found then
+           Rayfield:Notify({Title = "Błąd", Content = "Nie wykryto żadnej skrzynki na mapie!", Duration = 3})
+       else
+           Rayfield:Notify({Title = "Teleport", Content = "Przeteleportowano do skrzynki.", Duration = 2})
+       end
+   end,
+})
+
+ForestTab:CreateButton({
+   Name = "Przyciągnij wszystkie Itemy z mapy",
+   Callback = function()
+       local Root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+       local itemsBrought = 0
+       if Root then
+           for _, v in pairs(workspace:GetDescendants()) do
+               -- Przyciąga narzędzia (Tools) leżące luźno na mapie
+               if v:IsA("Tool") and v.Parent == workspace then
+                   if v:FindFirstChild("Handle") then
+                       v.Handle.CFrame = Root.CFrame
+                       itemsBrought = itemsBrought + 1
+                   end
+               -- Przyciąga części, które mają właściwości do podnoszenia (TouchInterest)
+               elseif v:IsA("BasePart") and v:FindFirstChild("TouchInterest") then
+                   v.CFrame = Root.CFrame
+                   itemsBrought = itemsBrought + 1
+               end
+           end
+           Rayfield:Notify({Title = "Zrzut Itemów", Content = "Przyciągnięto " .. itemsBrought .. " przedmiotów do Ciebie!", Duration = 3})
+       end
+   end,
+})
+
+-- ==========================================
+-- GŁÓWNA LOGIKA (ZABEZPIECZONA)
 -- ==========================================
 
 RunService.RenderStepped:Connect(function(deltaTime)
-    -- Bezpieczne sprawdzanie postaci
     local Char = LocalPlayer.Character
     if not Char then return end
     local Root = Char:FindFirstChild("HumanoidRootPart")
     if not Root then return end
 
-    -- 1. CFRAME FLY (Anti-Cheat Bypass)
+    -- CFRAME FLY
     if State.Fly then
-        Root.Anchored = true -- Zatrzymujemy fizykę (Anti-Cheat nie widzi ruchu)
-        
+        Root.Anchored = true
         local MoveDir = Vector3.new(0, 0, 0)
         local Look = Camera.CFrame.LookVector
         local Right = Camera.CFrame.RightVector
@@ -106,68 +172,45 @@ RunService.RenderStepped:Connect(function(deltaTime)
         if UIS:IsKeyDown(Enum.KeyCode.Space) then MoveDir = MoveDir + Vector3.new(0, 1, 0) end
         if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then MoveDir = MoveDir - Vector3.new(0, 1, 0) end
         
-        -- Normalizujemy wektor ruchu, żeby nie latać szybciej na skos
-        if MoveDir.Magnitude > 0 then
-            MoveDir = MoveDir.Unit
-        end
-        
-        -- Przesuwamy postać
+        if MoveDir.Magnitude > 0 then MoveDir = MoveDir.Unit end
         Root.CFrame = Root.CFrame + (MoveDir * (State.FlySpeed * deltaTime))
     end
 
-    -- 2. BEZPIECZNY AIMBOT
+    -- AIMBOT & AUTO-SHOOT
     if State.Aimbot then
-        pcall(function() -- Pcall zapobiega crashom, jeśli ktoś zginie w trakcie celowania
-            local Target = nil
-            local MinDist = math.huge
-            
+        pcall(function()
+            local Target, MinDist = nil, math.huge
             for _, p in pairs(Players:GetPlayers()) do
                 if p ~= LocalPlayer and p.Team ~= LocalPlayer.Team and p.Character and p.Character:FindFirstChild("Head") then
-                    local HeadPos = p.Character.Head.Position
-                    local ScreenPos, OnScreen = Camera:WorldToViewportPoint(HeadPos)
-                    
+                    local Pos, OnScreen = Camera:WorldToViewportPoint(p.Character.Head.Position)
                     if OnScreen then
                         local MousePos = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
-                        local Dist = (Vector2.new(ScreenPos.X, ScreenPos.Y) - MousePos).Magnitude
-                        
-                        if Dist < MinDist then
-                            MinDist = Dist
-                            Target = p.Character.Head
-                        end
+                        local Dist = (Vector2.new(Pos.X, Pos.Y) - MousePos).Magnitude
+                        if Dist < MinDist then MinDist = Dist; Target = p.Character.Head end
                     end
                 end
             end
-            
             if Target then
                 Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, Target.Position)
-                
-                if State.AutoShoot then
-                    -- Próba strzału
-                    if mouse1press then
-                        mouse1press(); task.wait(0.01); mouse1release()
-                    end
-                end
+                if State.AutoShoot and mouse1press then mouse1press(); task.wait(0.01); mouse1release() end
             end
         end)
     end
 
-    -- 3. ESP HIGHLIGHT
+    -- ESP HIGHLIGHT
     if State.ESP then
         for _, p in pairs(Players:GetPlayers()) do
             if p ~= LocalPlayer and p.Character then
                 local hl = p.Character:FindFirstChild("MarcinoX_ESP")
                 if not hl then
-                    hl = Instance.new("Highlight")
+                    hl = Instance.new("Highlight", p.Character)
                     hl.Name = "MarcinoX_ESP"
-                    hl.Parent = p.Character
                     hl.FillColor = (p.Team == LocalPlayer.Team) and Color3.new(0,1,0) or Color3.new(1,0,0)
                     hl.FillTransparency = 0.5
-                    hl.OutlineColor = Color3.new(1,1,1)
                 end
             end
         end
     else
-        -- Usuwanie ESP, gdy wyłączone
         for _, p in pairs(Players:GetPlayers()) do
             if p.Character and p.Character:FindFirstChild("MarcinoX_ESP") then
                 p.Character.MarcinoX_ESP:Destroy()
@@ -176,21 +219,16 @@ RunService.RenderStepped:Connect(function(deltaTime)
     end
 end)
 
--- 4. NOCLIP
+-- NOCLIP
 RunService.Stepped:Connect(function()
-    if State.NoClip then
-        local Char = LocalPlayer.Character
-        if Char then
-            for _, v in pairs(Char:GetDescendants()) do
-                if v:IsA("BasePart") then
-                    v.CanCollide = false
-                end
-            end
+    if State.NoClip and LocalPlayer.Character then
+        for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
+            if v:IsA("BasePart") then v.CanCollide = false end
         end
     end
 end)
 
--- BIND F
+-- BIND F (Globalny przełącznik latania)
 UIS.InputBegan:Connect(function(input, gpe)
     if not gpe and input.KeyCode == Enum.KeyCode.F then
         State.Fly = not State.Fly
@@ -200,5 +238,3 @@ UIS.InputBegan:Connect(function(input, gpe)
         Rayfield:Notify({Title = "Fly Status", Content = State.Fly and "Włączone (CFrame)" or "Wyłączone", Duration = 1})
     end
 end)
-
-Rayfield:Notify({Title = "Gotowe!", Content = "Zaktualizowano system przeciw Kickom.", Duration = 4})
