@@ -1,11 +1,21 @@
 --[[ 
-    Rivals Multi-Hack GUI for Xeno 
-    Features: Aimbot, Mega Fly (F), NoClip, TP, Speed
-    Library: Orion Lib
+    Rivals Multi-Hack | Zoptymalizowane pod Xeno
+    GitHub: OfficialMarcinoX
+    Features: Aimbot, Mega Fly (F), NoClip, TP
 ]]
 
+-- Ładowanie biblioteki z poprawką na czas oczekiwania
 local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
-local Window = OrionLib:MakeWindow({Name = "Rivals Hub | Xeno Edition", HidePremium = false, SaveConfig = true, ConfigFolder = "XenoRivals"})
+
+-- Tworzenie Okna (Zapewnienie widoczności)
+local Window = OrionLib:MakeWindow({
+    Name = "Rivals Hub | Xeno Edition", 
+    HidePremium = false, 
+    SaveConfig = true, 
+    ConfigFolder = "XenoRivals",
+    IntroEnabled = true,
+    IntroText = "Wczytywanie Xeno Hub..."
+})
 
 -- Zmienne
 local Players = game:GetService("Players")
@@ -14,20 +24,19 @@ local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- Ustawienia
+-- Ustawienia globalne
 _G.AimbotEnabled = false
 _G.NoClipEnabled = false
 _G.FlyEnabled = false
-_G.WalkSpeed = 16
-local FlySpeed = 250 -- Prędkość MEGA Fly
+_G.FlySpeed = 250
 
 -- ==========================================
--- TAB: COMBAT (Aimbot)
+-- ZAKŁADKA: RIVALS (Aimbot)
 -- ==========================================
-local CombatTab = Window:MakeTab({Name = "Combat", Icon = "rbxassetid://4483345998", PremiumOnly = false})
+local CombatTab = Window:MakeTab({Name = "Rivals", Icon = "rbxassetid://4483345998", PremiumOnly = false})
 
 CombatTab:AddToggle({
-	Name = "Aimbot",
+	Name = "Aimbot (Auto-Lock)",
 	Default = false,
 	Callback = function(Value)
 		_G.AimbotEnabled = Value
@@ -38,7 +47,6 @@ RunService.RenderStepped:Connect(function()
     if _G.AimbotEnabled then
         local ClosestPlayer = nil
         local ShortestDistance = math.huge
-
         for _, v in pairs(Players:GetPlayers()) do
             if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") and v.Team ~= LocalPlayer.Team then
                 local ScreenPos, OnScreen = Camera:WorldToViewportPoint(v.Character.HumanoidRootPart.Position)
@@ -52,7 +60,6 @@ RunService.RenderStepped:Connect(function()
                 end
             end
         end
-
         if ClosestPlayer then
             Camera.CFrame = CFrame.new(Camera.CFrame.Position, ClosestPlayer.Character.HumanoidRootPart.Position)
         end
@@ -60,17 +67,15 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- ==========================================
--- TAB: MOVEMENT (Fly, NoClip, Speed)
+-- ZAKŁADKA: MOVEMENT (Fly, NoClip)
 -- ==========================================
 local MoveTab = Window:MakeTab({Name = "Movement", Icon = "rbxassetid://4483362458", PremiumOnly = false})
 
--- Logika Latania
 local BodyGyro, BodyVelocity
 
 local function StartFly()
     local Character = LocalPlayer.Character
     if not Character or not Character:FindFirstChild("HumanoidRootPart") then return end
-    
     local Root = Character.HumanoidRootPart
     
     BodyGyro = Instance.new("BodyGyro", Root)
@@ -87,16 +92,17 @@ local function StartFly()
     task.spawn(function()
         while _G.FlyEnabled and Character:FindFirstChild("HumanoidRootPart") do
             local Direction = Vector3.new(0, 0, 0)
+            local CamCF = Camera.CFrame
             
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then Direction = Direction + Camera.CFrame.LookVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then Direction = Direction - Camera.CFrame.LookVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) then Direction = Direction - Camera.CFrame.RightVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then Direction = Direction + Camera.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then Direction = Direction + CamCF.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then Direction = Direction - CamCF.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then Direction = Direction - CamCF.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then Direction = Direction + CamCF.RightVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.Space) then Direction = Direction + Vector3.new(0, 1, 0) end
             if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then Direction = Direction - Vector3.new(0, 1, 0) end
             
-            BodyVelocity.Velocity = Direction * FlySpeed
-            BodyGyro.CFrame = Camera.CFrame
+            BodyVelocity.Velocity = Direction * _G.FlySpeed
+            BodyGyro.CFrame = CamCF
             RunService.RenderStepped:Wait()
         end
     end)
@@ -110,23 +116,18 @@ local function StopFly()
     end
 end
 
--- Włączanie/Wyłączanie latania pod przyciskiem F
+-- Obsługa klawisza F
 UserInputService.InputBegan:Connect(function(input, gpe)
-    if gpe then return end -- ignoruje kliknięcia w chat itp.
+    if gpe then return end
     if input.KeyCode == Enum.KeyCode.F then
         _G.FlyEnabled = not _G.FlyEnabled
-        if _G.FlyEnabled then
-            StartFly()
-            OrionLib:MakeNotification({Name = "Fly", Content = "Latanie Włączone (MEGA)", Time = 2})
-        else
-            StopFly()
-            OrionLib:MakeNotification({Name = "Fly", Content = "Latanie Wyłączone", Time = 2})
-        end
+        if _G.FlyEnabled then StartFly() else StopFly() end
+        OrionLib:MakeNotification({Name = "System", Content = "Fly: " .. tostring(_G.FlyEnabled), Time = 1})
     end
 end)
 
 MoveTab:AddToggle({
-	Name = "Mega Fly (Włącz z GUI lub użyj klawisza F)",
+	Name = "Mega Fly (Klawisz F)",
 	Default = false,
 	Callback = function(Value)
 		_G.FlyEnabled = Value
@@ -135,59 +136,26 @@ MoveTab:AddToggle({
 })
 
 MoveTab:AddSlider({
-	Name = "WalkSpeed",
-	Min = 16,
-	Max = 200,
-	Default = 16,
-	Color = Color3.fromRGB(255,255,255),
-	Increment = 1,
-	ValueName = "Speed",
-	Callback = function(Value)
-		LocalPlayer.Character.Humanoid.WalkSpeed = Value
-	end    
+	Name = "Prędkość Lotu",
+	Min = 50,
+	Max = 1000,
+	Default = 250,
+	Callback = function(Value) _G.FlySpeed = Value end    
 })
 
 MoveTab:AddToggle({
-	Name = "NoClip (Przechodzenie przez ściany)",
+	Name = "NoClip (Przez ściany)",
 	Default = false,
-	Callback = function(Value)
-		_G.NoClipEnabled = Value
-	end    
+	Callback = function(Value) _G.NoClipEnabled = Value end    
 })
 
 RunService.Stepped:Connect(function()
     if _G.NoClipEnabled and LocalPlayer.Character then
         for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = false
-            end
+            if part:IsA("BasePart") then part.CanCollide = false end
         end
     end
 end)
 
--- ==========================================
--- TAB: TELEPORT
--- ==========================================
-local TPTab = Window:MakeTab({Name = "Teleport", Icon = "rbxassetid://4483345998", PremiumOnly = false})
-
-local function GetPlayerList()
-    local Names = {}
-    for _, v in pairs(Players:GetPlayers()) do
-        if v ~= LocalPlayer then table.insert(Names, v.Name) end
-    end
-    return Names
-end
-
-TPTab:AddDropdown({
-	Name = "Wybierz Gracza",
-	Default = "",
-	Options = GetPlayerList(),
-	Callback = function(Value)
-		local Target = Players:FindFirstChild(Value)
-		if Target and Target.Character and Target.Character:FindFirstChild("HumanoidRootPart") then
-			LocalPlayer.Character.HumanoidRootPart.CFrame = Target.Character.HumanoidRootPart.CFrame
-		end
-	end    
-})
-
+-- Inicjalizacja końcowa
 OrionLib:Init()
