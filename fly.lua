@@ -1,25 +1,21 @@
 --[[ 
-    XENO GOD HUB | 99 NOCY W LESIE EDITION
-    Zasilane przez: Rayfield Engine
+    XENO GOD HUB | 99 NOCY W LESIE (ULTRA BYPASS)
+    Zasilane przez: Rayfield Engine | Obejście FilteringEnabled
 ]]
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "Xeno | Survival HUB",
-   LoadingTitle = "Ładowanie Systemu Survival...",
-   LoadingSubtitle = "Witaj, planexd_0",
+   Name = "Xeno | TOTAL DOMINATION",
+   LoadingTitle = "Włamywanie do silnika gry...",
+   LoadingSubtitle = "Omijanie zabezpieczeń serwera...",
    ConfigurationSaving = { Enabled = false }
 })
 
--- ==========================================
--- ZMIENNE SYSTEMOWE
--- ==========================================
 local State = {
+    Hitbox = false,
     Fly = false,
-    NoClip = false,
-    ESP = false,
-    FlySpeed = 150
+    FlySpeed = 200
 }
 
 local Players = game:GetService("Players")
@@ -29,178 +25,162 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
 -- ==========================================
--- ZAKŁADKA 1: 99 NOCY W LESIE (SURVIVAL)
+-- ZAKŁADKA 1: GOD MODE (SIEKIERA & TP)
 -- ==========================================
-local ForestTab = Window:CreateTab("99 Nocy w Lesie", 4483362458)
+local GodTab = Window:CreateTab("God Mode", 4483345998)
 
-ForestTab:CreateSection("Zasoby i Jedzenie")
+GodTab:CreateToggle({
+   Name = "Siekiera Zabija Wszystko (Hitbox Aura)",
+   CurrentValue = false,
+   Callback = function(Value) 
+       State.Hitbox = Value 
+       if not Value then
+           -- Reset hitboxów
+           for _, v in pairs(workspace:GetDescendants()) do
+               if v:IsA("Model") and v:FindFirstChild("HumanoidRootPart") and v ~= LocalPlayer.Character then
+                   v.HumanoidRootPart.Size = Vector3.new(2, 2, 1)
+                   v.HumanoidRootPart.Transparency = 1
+               end
+           end
+       end
+   end,
+})
 
-ForestTab:CreateButton({
-   Name = "Teleportuj do Jedzenia / Itemów",
+GodTab:CreateButton({
+   Name = "TP do Ogniska (Nawet poza mapę)",
    Callback = function()
        local Root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
        if Root then
-           local found = false
+           local fireFound = false
            for _, v in pairs(workspace:GetDescendants()) do
                local name = string.lower(v.Name)
-               -- Szuka typowych nazw jedzenia w grach survival
-               if name:match("apple") or name:match("meat") or name:match("food") or name:match("berry") or name:match("mushroom") then
-                   if v:IsA("BasePart") then
-                       Root.CFrame = v.CFrame * CFrame.new(0, 2, 0)
-                       found = true
-                       Rayfield:Notify({Title = "Znaleziono!", Content = "Teleportowano do: " .. v.Name, Duration = 2})
+               -- Szuka czegokolwiek, co przypomina ogień/ognisko
+               if name:match("fire") or name:match("ognisko") or name:match("camp") or v:IsA("Fire") then
+                   local targetPart = v:IsA("BasePart") and v or v.Parent
+                   if targetPart and targetPart:IsA("BasePart") then
+                       -- Wymuszony CFrame teleport, ignoruje granice mapy
+                       Root.CFrame = targetPart.CFrame * CFrame.new(0, 5, 0)
+                       fireFound = true
+                       Rayfield:Notify({Title = "Teleport", Content = "Wymuszono TP do Ogniska!", Duration = 2})
                        break
                    end
                end
            end
-           if not found then
-               Rayfield:Notify({Title = "Błąd", Content = "Brak jedzenia na mapie w tym momencie.", Duration = 2})
+           if not fireFound then
+               Rayfield:Notify({Title = "Błąd", Content = "Gra nie wygenerowała jeszcze ogniska.", Duration = 2})
            end
        end
    end,
 })
 
-ForestTab:CreateButton({
-   Name = "Przyciągnij wszystkie Itemy z ziemi (Magnet)",
+GodTab:CreateButton({
+   Name = "Wymuś Wszystkie Itemy (Brutal Magnet)",
    Callback = function()
        local Root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-       local count = 0
        if Root then
+           local count = 0
+           -- Brutalne teleportowanie wszystkiego, co ma fizykę, pod Twoje nogi
            for _, v in pairs(workspace:GetDescendants()) do
-               if v:IsA("Tool") and v.Parent == workspace then
-                   if v:FindFirstChild("Handle") then
-                       v.Handle.CFrame = Root.CFrame
+               if v:IsA("BasePart") and not v.Anchored and v.Parent ~= LocalPlayer.Character then
+                   if v.Name ~= "HumanoidRootPart" and v.Name ~= "Torso" and v.Name ~= "Head" then
+                       v.CFrame = Root.CFrame
                        count = count + 1
                    end
                end
            end
-           Rayfield:Notify({Title = "Magnet", Content = "Przyciągnięto " .. count .. " przedmiotów!", Duration = 3})
+           Rayfield:Notify({Title = "Magnet", Content = "Wyrwano " .. count .. " obiektów z silnika!", Duration = 3})
        end
    end,
 })
 
-ForestTab:CreateSection("Ognisko i Baza")
+-- ==========================================
+-- ZAKŁADKA 2: ENGINE ABUSE (NISZCZYCIEL)
+-- ==========================================
+local AdminTab = Window:CreateTab("Engine Abuse", 4483362458)
 
-ForestTab:CreateButton({
-   Name = "Rozpal Ognisko na MAX (Spam)",
+AdminTab:CreateButton({
+   Name = "ODPAL WSZYSTKO (Nuke Prompts)",
    Callback = function()
        local fired = 0
+       -- Ignoruje czas trzymania E i odpala absolutnie każdą interakcję na mapie
        for _, prompt in pairs(workspace:GetDescendants()) do
            if prompt:IsA("ProximityPrompt") then
-               local pName = prompt.Parent and string.lower(prompt.Parent.Name) or ""
-               local aText = string.lower(prompt.ActionText)
-               -- Szuka interakcji dodawania drewna / ognia
-               if pName:match("fire") or pName:match("ognisko") or aText:match("wood") or aText:match("drewno") or aText:match("rozpal") then
-                   if fireproximityprompt then
-                       fireproximityprompt(prompt, 1)
-                       fired = fired + 1
-                   end
+               prompt.HoldDuration = 0
+               prompt.MaxActivationDistance = 99999
+               if fireproximityprompt then
+                   fireproximityprompt(prompt, 1)
+                   fired = fired + 1
                end
            end
        end
-       Rayfield:Notify({Title = "Ognisko", Content = "Użyto interakcji ogniska " .. fired .. " razy!", Duration = 3})
+       Rayfield:Notify({Title = "Admin Abuse", Content = "Odpalono " .. fired .. " skryptów serwera na raz!", Duration = 4})
    end,
 })
 
--- ==========================================
--- ZAKŁADKA 2: ADMIN ABUSE & TROLL
--- ==========================================
-local AdminTab = Window:CreateTab("Admin Abuse", 4483345998)
-
-AdminTab:CreateSection("Niszczenie Serwera")
-
 AdminTab:CreateButton({
-   Name = "Zabij wszystkie Moby/Zwierzęta (Insta-Kill)",
+   Name = "Zlaguj Serwer (Spam RemoteEvents)",
    Callback = function()
-       local killed = 0
-       for _, v in pairs(workspace:GetDescendants()) do
-           if v:IsA("Model") and v:FindFirstChild("Humanoid") and not Players:GetPlayerFromCharacter(v) then
-               v.Humanoid.Health = 0
-               killed = killed + 1
+       local remotes = 0
+       -- Znajduje wszystkie niezabezpieczone pakiety danych i spamuje je do serwera
+       for _, event in pairs(game:GetDescendants()) do
+           if event:IsA("RemoteEvent") then
+               pcall(function()
+                   event:FireServer()
+                   remotes = remotes + 1
+               end)
            end
        end
-       Rayfield:Notify({Title = "Rzeź", Content = "Zabito " .. killed .. " mobów na mapie.", Duration = 3})
-   end,
-})
-
-AdminTab:CreateButton({
-   Name = "Fling (Wyrzuć graczy w kosmos)",
-   Callback = function()
-       local Root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-       if Root then
-           local Spin = Instance.new("BodyAngularVelocity")
-           Spin.Name = "AdminFling"
-           Spin.Parent = Root
-           Spin.MaxTorque = Vector3.new(1, 1, 1) * math.huge
-           Spin.AngularVelocity = Vector3.new(0, 99999, 0)
-           Rayfield:Notify({Title = "Troll", Content = "Podejdź do kogoś, aby wystrzelić go w kosmos! (Kliknij ponownie by wyłączyć)", Duration = 4})
-           
-           -- Zabezpieczenie na wyłączenie
-           task.delay(10, function()
-               if Spin then Spin:Destroy() end
-               Rayfield:Notify({Title = "Troll", Content = "Fling wyłączony (limit 10 sekund).", Duration = 2})
-           end)
-       end
-   end,
-})
-
-AdminTab:CreateButton({
-   Name = "Spam Dźwiękami (Troll na cały serwer)",
-   Callback = function()
-       for _, sound in pairs(workspace:GetDescendants()) do
-           if sound:IsA("Sound") then
-               sound:Play()
-           end
-       end
-       Rayfield:Notify({Title = "Troll", Content = "Wszystkie dźwięki na mapie zostały odtworzone!", Duration = 3})
+       Rayfield:Notify({Title = "Crash Attempt", Content = "Wysłano " .. remotes .. " fałszywych pakietów do serwera.", Duration = 3})
    end,
 })
 
 -- ==========================================
--- ZAKŁADKA 3: RUCH (FLY / NOCLIP)
+-- ZAKŁADKA 3: MOVEMENT
 -- ==========================================
-local MoveTab = Window:CreateTab("Ruch & Fly", 4483362458)
+local MoveTab = Window:CreateTab("Movement", 4483345998)
 
 MoveTab:CreateToggle({
-   Name = "MEGA FLY (CFrame - BEZ KICKA) [Klawisz F]",
+   Name = "GOD FLY (CFrame - Klawisz F)",
    CurrentValue = false,
    Callback = function(Value) 
        State.Fly = Value 
-       if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-           if not State.Fly then LocalPlayer.Character.HumanoidRootPart.Anchored = false end
+       if not Value and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+           LocalPlayer.Character.HumanoidRootPart.Anchored = false
        end
    end,
 })
 
 MoveTab:CreateSlider({
-   Name = "Prędkość Latania",
-   Min = 10, Max = 500, CurrentValue = 150,
+   Name = "Prędkość Fly",
+   Min = 50, Max = 1000, CurrentValue = 200,
    Callback = function(Value) State.FlySpeed = Value end,
 })
 
-MoveTab:CreateToggle({
-   Name = "NOCLIP (Przez Ściany)",
-   CurrentValue = false,
-   Callback = function(Value) State.NoClip = Value end,
-})
-
-MoveTab:CreateToggle({
-   Name = "ESP (Widzenie Graczy/Mobów)",
-   CurrentValue = false,
-   Callback = function(Value) State.ESP = Value end,
-})
-
 -- ==========================================
--- GŁÓWNA LOGIKA (BEZPIECZNA)
+-- GŁÓWNA PĘTLA ENGINE HOOK
 -- ==========================================
-
 RunService.RenderStepped:Connect(function(deltaTime)
     local Char = LocalPlayer.Character
     if not Char then return end
     local Root = Char:FindFirstChild("HumanoidRootPart")
     if not Root then return end
 
-    -- CFRAME FLY
+    -- 1. HITBOX EXPANDER (Siekiera trafia z każdego miejsca)
+    if State.Hitbox then
+        for _, v in pairs(workspace:GetDescendants()) do
+            if v:IsA("Model") and v:FindFirstChild("Humanoid") and v ~= Char then
+                local eRoot = v:FindFirstChild("HumanoidRootPart")
+                if eRoot then
+                    -- Rozciąga przeciwnika do gigantycznych rozmiarów (widoczne tylko dla Ciebie)
+                    eRoot.Size = Vector3.new(50, 50, 50)
+                    eRoot.Transparency = 0.8 -- Lekko przezroczyste, żeby nie zasłaniać ekranu
+                    eRoot.CanCollide = false
+                end
+            end
+        end
+    end
+
+    -- 2. GOD FLY (Ignoruje logikę gry)
     if State.Fly then
         Root.Anchored = true
         local MoveDir = Vector3.new(0, 0, 0)
@@ -217,45 +197,14 @@ RunService.RenderStepped:Connect(function(deltaTime)
         if MoveDir.Magnitude > 0 then MoveDir = MoveDir.Unit end
         Root.CFrame = Root.CFrame + (MoveDir * (State.FlySpeed * deltaTime))
     end
-
-    -- ESP HIGHLIGHT
-    if State.ESP then
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer and p.Character then
-                local hl = p.Character:FindFirstChild("Xeno_ESP")
-                if not hl then
-                    hl = Instance.new("Highlight", p.Character)
-                    hl.Name = "Xeno_ESP"
-                    hl.FillColor = Color3.new(1,0,0)
-                    hl.FillTransparency = 0.5
-                end
-            end
-        end
-    else
-        for _, p in pairs(Players:GetPlayers()) do
-            if p.Character and p.Character:FindFirstChild("Xeno_ESP") then
-                p.Character.Xeno_ESP:Destroy()
-            end
-        end
-    end
 end)
 
--- NOCLIP
-RunService.Stepped:Connect(function()
-    if State.NoClip and LocalPlayer.Character then
-        for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
-            if v:IsA("BasePart") then v.CanCollide = false end
-        end
-    end
-end)
-
--- BIND F (Globalny przełącznik latania)
 UIS.InputBegan:Connect(function(input, gpe)
     if not gpe and input.KeyCode == Enum.KeyCode.F then
         State.Fly = not State.Fly
         if not State.Fly and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
             LocalPlayer.Character.HumanoidRootPart.Anchored = false
         end
-        Rayfield:Notify({Title = "Fly Status", Content = State.Fly and "Włączone (CFrame)" or "Wyłączone", Duration = 1})
+        Rayfield:Notify({Title = "Fly Status", Content = State.Fly and "Włączone" or "Wyłączone", Duration = 1})
     end
 end)
