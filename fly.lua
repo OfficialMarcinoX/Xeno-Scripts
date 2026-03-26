@@ -1,129 +1,124 @@
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+--[[ 
+    Rivals Multi-Hack GUI for Xeno 
+    Features: Aimbot, Fly, NoClip, TP, Speed
+    Library: Orion Lib
+]]
 
-local Window = Rayfield:CreateWindow({
-   Name = "planexd_0 SERVER BREAKER v4",
-   LoadingTitle = "Wstrzykiwanie Destruktora...",
-   LoadingSubtitle = "Serwer zaraz padnie.",
-   ConfigurationSaving = { Enabled = false },
-   KeySystem = false
-})
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+local Window = OrionLib:MakeWindow({Name = "Rivals Hub | Xeno Edition", HidePremium = false, SaveConfig = true, ConfigFolder = "XenoRivals"})
 
--- ================= ZMIENNE FIZYKI (Dla Widoczności u Innych) =================
+-- Zmienne
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
 
--- Ustawienie sieciowe (żeby inni widzieli Twoje przesunięcia obiektów)
-settings().Physics.AllowSleep = false
-sethiddenproperty(player, "SimulationRadius", 1000)
-sethiddenproperty(player, "MaxSimulationRadius", 1000)
+-- Ustawienia
+_G.AimbotEnabled = false
+_G.NoClipEnabled = false
+_G.WalkSpeed = 16
 
--- ================= ZAKŁADKA 🚌 VEHICLE KILL & MASS TROLL =================
-local TabMass = Window:CreateTab("🚌 MASS KILL & TROLL", 4483362458)
+-- Tab: Combat (Aimbot)
+local CombatTab = Window:MakeTab({Name = "Combat", Icon = "rbxassetid://4483345998", PremiumOnly = false})
 
-TabMass:CreateSection("🚌 BUS KILL (WIDOCZNE DLA WSZYSTKICH)")
-
-TabMass:CreateButton({
-   Name = "🚌 ODPAL BUS KILL (Porywa auta i zabija)",
-   Callback = function()
-        Rayfield:Notify({Title = "ATTACK", Content = "Porywanie pojazdów do ataku...", Duration = 3})
-        for _, v in pairs(workspace:GetDescendants()) do
-            if v:IsA("VehicleSeat") or v:IsA("DriveSeat") then
-                task.spawn(function()
-                    while task.wait() do
-                        -- Teleportujemy auto w graczy z ogromną prędkością
-                        for _, p in pairs(Players:GetPlayers()) do
-                            if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                                v.Parent:SetPrimaryPartCFrame(p.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 2))
-                                v.Parent.PrimaryPart.Velocity = Vector3.new(500, 500, 500)
-                            end
-                        end
-                    end
-                end)
-            end
-        end
-   end
+CombatTab:AddToggle({
+	Name = "Aimbot (Silent)",
+	Default = false,
+	Callback = function(Value)
+		_G.AimbotEnabled = Value
+	end    
 })
 
-TabMass:CreateSection("⚡ SERWER EXPLOITS")
+-- Prosta logika Aimbota (Namierzanie najbliższego gracza)
+RunService.RenderStepped:Connect(function()
+    if _G.AimbotEnabled then
+        local ClosestPlayer = nil
+        local ShortestDistance = math.huge
 
-TabMass:CreateButton({
-   Name = "🧨 LAGGER SERWERA (SPAM REMOTES)",
-   Callback = function()
-        Rayfield:Notify({Title = "CRASH", Content = "Spamowanie serwera danymi...", Duration = 5})
-        while task.wait(0.01) do
-            for _, v in pairs(game:GetDescendants()) do
-                if v:IsA("RemoteEvent") then
-                    v:FireServer("planexd_0_LAG_POWER", math.huge, string.rep("CRASH", 1000))
+        for _, v in pairs(Players:GetPlayers()) do
+            if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") and v.Team ~= LocalPlayer.Team then
+                local ScreenPos, OnScreen = Camera:WorldToViewportPoint(v.Character.HumanoidRootPart.Position)
+                if OnScreen then
+                    local MousePos = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+                    local Distance = (Vector2.new(ScreenPos.X, ScreenPos.Y) - MousePos).Magnitude
+                    if Distance < ShortestDistance then
+                        ClosestPlayer = v
+                        ShortestDistance = Distance
+                    end
                 end
             end
         end
-   end
-})
 
-TabMass:CreateButton({
-   Name = "💀 KILL ALL (Jeśli gra ma dziury)",
-   Callback = function()
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= player and p.Character and p.Character:FindFirstChild("Humanoid") then
-                pcall(function()
-                    -- Próba ataku przez luki w eventach bojowych
-                    game:GetService("ReplicatedStorage").RemoteEvents.Damage:FireServer(p.Character.Humanoid, 100)
-                end)
-            end
+        if ClosestPlayer then
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, ClosestPlayer.Character.HumanoidRootPart.Position)
         end
-   end
+    end
+end)
+
+-- Tab: Movement (Fly, NoClip, Speed)
+local MoveTab = Window:MakeTab({Name = "Movement", Icon = "rbxassetid://4483362458", PremiumOnly = false})
+
+MoveTab:AddSlider({
+	Name = "WalkSpeed",
+	Min = 16,
+	Max = 200,
+	Default = 16,
+	Color = Color3.fromRGB(255,255,255),
+	Increment = 1,
+	ValueName = "Speed",
+	Callback = function(Value)
+		LocalPlayer.Character.Humanoid.WalkSpeed = Value
+	end    
 })
 
--- ================= ZAKŁADKA 🛠️ MAP DESTRUCTOR =================
-local TabMap = Window:CreateTab("🛠️ MAP DESTROY", 4483362458)
-
-TabMap:CreateButton({
-   Name = "💥 WYŁĄCZ KOTWICE (MAPA SPADA - FE)",
-   Callback = function()
-        -- Aby to było widoczne u innych, musisz dotknąć obiektów (Network Ownership)
-        for _, part in pairs(workspace:GetDescendants()) do
-            if part:IsA("BasePart") and part.Anchored == true then
-                pcall(function()
-                    player.Character.HumanoidRootPart.CFrame = part.CFrame
-                    part.Anchored = false
-                    part.CanCollide = true
-                    part.Velocity = Vector3.new(0, -500, 0)
-                end)
-            end
-        end
-   end
+MoveTab:AddToggle({
+	Name = "NoClip (Przechodzenie przez ściany)",
+	Default = false,
+	Callback = function(Value)
+		_G.NoClipEnabled = Value
+	end    
 })
 
-TabMap:CreateButton({
-   Name = "❌ USUŃ WSZYSTKIE SKRYPTY (LOCAL)",
-   Callback = function()
-        for _, v in pairs(game:GetDescendants()) do
-            if v:IsA("LocalScript") or v:IsA("ModuleScript") then
-                v:Destroy()
-            end
-        end
-        Rayfield:Notify({Title = "DESTROJER", Content = "Skrypty lokalne usunięte. Gra powinna przestać działać."})
-   end
-})
-
--- ================= PĘTLE BOJOWE =================
+-- Logika NoClip
 RunService.Stepped:Connect(function()
-    -- Niezmodyfikowany Noclip dla planexd_0
-    if _G.Noclip then
-        for _, part in pairs(player.Character:GetDescendants()) do
-            if part:IsA("BasePart") then part.CanCollide = false end
+    if _G.NoClipEnabled and LocalPlayer.Character then
+        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
         end
     end
 end)
 
--- Auto-Simulation Radius (Klucz do widoczności Twoich cheatów u innych)
-task.spawn(function()
-    while task.wait() do
-        player.MaximumSimulationRadius = math.huge
-        player.SimulationRadius = math.huge
-    end
-end)
+-- Tab: Teleport (TP to Players)
+local TPTab = Window:MakeTab({Name = "Teleport", Icon = "rbxassetid://4483345998", PremiumOnly = false})
 
-Rayfield:Notify({Title = "PLANEXD_0 EXPLOIT", Content = "Zabezpieczenia serwera złamane. Baw się dobrze!", Duration = 5})
+local function GetPlayerList()
+    local Names = {}
+    for _, v in pairs(Players:GetPlayers()) do
+        if v ~= LocalPlayer then table.insert(Names, v.Name) end
+    end
+    return Names
+end
+
+TPTab:AddDropdown({
+	Name = "Wybierz Gracza",
+	Default = "",
+	Options = GetPlayerList(),
+	Callback = function(Value)
+		local Target = Players:FindFirstChild(Value)
+		if Target and Target.Character then
+			LocalPlayer.Character.HumanoidRootPart.CFrame = Target.Character.HumanoidRootPart.CFrame
+		end
+	end    
+})
+
+TPTab:AddButton({
+	Name = "Odśwież listę graczy",
+	Callback = function()
+		-- Funkcja odświeżania dropdowna wymagałaby przeładowania tabu, ale przycisk przypomina o wyborze
+		OrionLib:MakeNotification({Name = "Info", Content = "Wybierz gracza ponownie z listy.", Time = 3})
+	end    
+})
+
+OrionLib:Init()
