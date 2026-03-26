@@ -1,23 +1,25 @@
 --[[ 
-    XENO GOD HUB | MULTI-GAME EDITION
-    GitHub: OfficialMarcinoX
+    XENO GOD HUB | 99 NOCY W LESIE EDITION
+    Zasilane przez: Rayfield Engine
 ]]
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "Xeno | OfficialMarcinoX HUB",
-   LoadingTitle = "Ładowanie Systemu...",
-   LoadingSubtitle = "Zalogowano jako: planexd_0",
+   Name = "Xeno | Survival HUB",
+   LoadingTitle = "Ładowanie Systemu Survival...",
+   LoadingSubtitle = "Witaj, planexd_0",
    ConfigurationSaving = { Enabled = false }
 })
 
 -- ==========================================
--- GŁÓWNE ZMIENNE
+-- ZMIENNE SYSTEMOWE
 -- ==========================================
 local State = {
-    Aimbot = false, AutoShoot = false, Fly = false,
-    NoClip = false, ESP = false, FlySpeed = 150
+    Fly = false,
+    NoClip = false,
+    ESP = false,
+    FlySpeed = 150
 }
 
 local Players = game:GetService("Players")
@@ -27,24 +29,140 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
 -- ==========================================
--- ZAKŁADKA 1: RIVALS CHEATS
+-- ZAKŁADKA 1: 99 NOCY W LESIE (SURVIVAL)
 -- ==========================================
-local RivalsTab = Window:CreateTab("Rivals Cheats", 4483345998)
+local ForestTab = Window:CreateTab("99 Nocy w Lesie", 4483362458)
 
-RivalsTab:CreateToggle({
-   Name = "SILENT AIMBOT (Safe Lock)",
-   CurrentValue = false,
-   Callback = function(Value) State.Aimbot = Value end,
+ForestTab:CreateSection("Zasoby i Jedzenie")
+
+ForestTab:CreateButton({
+   Name = "Teleportuj do Jedzenia / Itemów",
+   Callback = function()
+       local Root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+       if Root then
+           local found = false
+           for _, v in pairs(workspace:GetDescendants()) do
+               local name = string.lower(v.Name)
+               -- Szuka typowych nazw jedzenia w grach survival
+               if name:match("apple") or name:match("meat") or name:match("food") or name:match("berry") or name:match("mushroom") then
+                   if v:IsA("BasePart") then
+                       Root.CFrame = v.CFrame * CFrame.new(0, 2, 0)
+                       found = true
+                       Rayfield:Notify({Title = "Znaleziono!", Content = "Teleportowano do: " .. v.Name, Duration = 2})
+                       break
+                   end
+               end
+           end
+           if not found then
+               Rayfield:Notify({Title = "Błąd", Content = "Brak jedzenia na mapie w tym momencie.", Duration = 2})
+           end
+       end
+   end,
 })
 
-RivalsTab:CreateToggle({
-   Name = "AUTO-SHOOT",
-   CurrentValue = false,
-   Callback = function(Value) State.AutoShoot = Value end,
+ForestTab:CreateButton({
+   Name = "Przyciągnij wszystkie Itemy z ziemi (Magnet)",
+   Callback = function()
+       local Root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+       local count = 0
+       if Root then
+           for _, v in pairs(workspace:GetDescendants()) do
+               if v:IsA("Tool") and v.Parent == workspace then
+                   if v:FindFirstChild("Handle") then
+                       v.Handle.CFrame = Root.CFrame
+                       count = count + 1
+                   end
+               end
+           end
+           Rayfield:Notify({Title = "Magnet", Content = "Przyciągnięto " .. count .. " przedmiotów!", Duration = 3})
+       end
+   end,
 })
 
-RivalsTab:CreateToggle({
-   Name = "MEGA FLY (CFrame - BEZ KICKA)",
+ForestTab:CreateSection("Ognisko i Baza")
+
+ForestTab:CreateButton({
+   Name = "Rozpal Ognisko na MAX (Spam)",
+   Callback = function()
+       local fired = 0
+       for _, prompt in pairs(workspace:GetDescendants()) do
+           if prompt:IsA("ProximityPrompt") then
+               local pName = prompt.Parent and string.lower(prompt.Parent.Name) or ""
+               local aText = string.lower(prompt.ActionText)
+               -- Szuka interakcji dodawania drewna / ognia
+               if pName:match("fire") or pName:match("ognisko") or aText:match("wood") or aText:match("drewno") or aText:match("rozpal") then
+                   if fireproximityprompt then
+                       fireproximityprompt(prompt, 1)
+                       fired = fired + 1
+                   end
+               end
+           end
+       end
+       Rayfield:Notify({Title = "Ognisko", Content = "Użyto interakcji ogniska " .. fired .. " razy!", Duration = 3})
+   end,
+})
+
+-- ==========================================
+-- ZAKŁADKA 2: ADMIN ABUSE & TROLL
+-- ==========================================
+local AdminTab = Window:CreateTab("Admin Abuse", 4483345998)
+
+AdminTab:CreateSection("Niszczenie Serwera")
+
+AdminTab:CreateButton({
+   Name = "Zabij wszystkie Moby/Zwierzęta (Insta-Kill)",
+   Callback = function()
+       local killed = 0
+       for _, v in pairs(workspace:GetDescendants()) do
+           if v:IsA("Model") and v:FindFirstChild("Humanoid") and not Players:GetPlayerFromCharacter(v) then
+               v.Humanoid.Health = 0
+               killed = killed + 1
+           end
+       end
+       Rayfield:Notify({Title = "Rzeź", Content = "Zabito " .. killed .. " mobów na mapie.", Duration = 3})
+   end,
+})
+
+AdminTab:CreateButton({
+   Name = "Fling (Wyrzuć graczy w kosmos)",
+   Callback = function()
+       local Root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+       if Root then
+           local Spin = Instance.new("BodyAngularVelocity")
+           Spin.Name = "AdminFling"
+           Spin.Parent = Root
+           Spin.MaxTorque = Vector3.new(1, 1, 1) * math.huge
+           Spin.AngularVelocity = Vector3.new(0, 99999, 0)
+           Rayfield:Notify({Title = "Troll", Content = "Podejdź do kogoś, aby wystrzelić go w kosmos! (Kliknij ponownie by wyłączyć)", Duration = 4})
+           
+           -- Zabezpieczenie na wyłączenie
+           task.delay(10, function()
+               if Spin then Spin:Destroy() end
+               Rayfield:Notify({Title = "Troll", Content = "Fling wyłączony (limit 10 sekund).", Duration = 2})
+           end)
+       end
+   end,
+})
+
+AdminTab:CreateButton({
+   Name = "Spam Dźwiękami (Troll na cały serwer)",
+   Callback = function()
+       for _, sound in pairs(workspace:GetDescendants()) do
+           if sound:IsA("Sound") then
+               sound:Play()
+           end
+       end
+       Rayfield:Notify({Title = "Troll", Content = "Wszystkie dźwięki na mapie zostały odtworzone!", Duration = 3})
+   end,
+})
+
+-- ==========================================
+-- ZAKŁADKA 3: RUCH (FLY / NOCLIP)
+-- ==========================================
+local MoveTab = Window:CreateTab("Ruch & Fly", 4483362458)
+
+MoveTab:CreateToggle({
+   Name = "MEGA FLY (CFrame - BEZ KICKA) [Klawisz F]",
    CurrentValue = false,
    Callback = function(Value) 
        State.Fly = Value 
@@ -54,102 +172,26 @@ RivalsTab:CreateToggle({
    end,
 })
 
-RivalsTab:CreateToggle({
+MoveTab:CreateSlider({
+   Name = "Prędkość Latania",
+   Min = 10, Max = 500, CurrentValue = 150,
+   Callback = function(Value) State.FlySpeed = Value end,
+})
+
+MoveTab:CreateToggle({
    Name = "NOCLIP (Przez Ściany)",
    CurrentValue = false,
    Callback = function(Value) State.NoClip = Value end,
 })
 
-RivalsTab:CreateToggle({
-   Name = "ESP (Widzenie przez ściany)",
+MoveTab:CreateToggle({
+   Name = "ESP (Widzenie Graczy/Mobów)",
    CurrentValue = false,
    Callback = function(Value) State.ESP = Value end,
 })
 
-RivalsTab:CreateSlider({
-   Name = "Prędkość (Fly/Speed)",
-   Min = 10, Max = 500, CurrentValue = 150,
-   Callback = function(Value) State.FlySpeed = Value end,
-})
-
 -- ==========================================
--- ZAKŁADKA 2: 99 NOCY W LESIE (SURVIVAL)
--- ==========================================
-local ForestTab = Window:CreateTab("99 Nocy w Lesie", 4483362458)
-
-ForestTab:CreateButton({
-   Name = "Zabij wszystkie zwierzęta (Moby)",
-   Callback = function()
-       local killed = 0
-       -- Skanuje całą mapę w poszukiwaniu "Humanoidów", które nie są graczami
-       for _, v in pairs(workspace:GetDescendants()) do
-           if v:IsA("Model") and v:FindFirstChild("Humanoid") then
-               if not Players:GetPlayerFromCharacter(v) then
-                   v.Humanoid.Health = 0
-                   killed = killed + 1
-               end
-           end
-       end
-       Rayfield:Notify({Title = "Sukces!", Content = "Zabito " .. killed .. " zwierząt/mobów.", Duration = 3})
-   end,
-})
-
-ForestTab:CreateButton({
-   Name = "Teleportuj do Skrzynki / Bazy",
-   Callback = function()
-       local found = false
-       local Root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-       if Root then
-           -- Szuka na mapie obiektów o nazwie chest, skrzynka, storage itp.
-           for _, v in pairs(workspace:GetDescendants()) do
-               local name = string.lower(v.Name)
-               if name:match("chest") or name:match("skrzyn") or name:match("storage") or name:match("box") then
-                   if v:IsA("BasePart") then
-                       Root.CFrame = v.CFrame * CFrame.new(0, 3, 0)
-                       found = true
-                       break
-                   elseif v:IsA("Model") and v.PrimaryPart then
-                       Root.CFrame = v.PrimaryPart.CFrame * CFrame.new(0, 3, 0)
-                       found = true
-                       break
-                   end
-               end
-           end
-       end
-       if not found then
-           Rayfield:Notify({Title = "Błąd", Content = "Nie wykryto żadnej skrzynki na mapie!", Duration = 3})
-       else
-           Rayfield:Notify({Title = "Teleport", Content = "Przeteleportowano do skrzynki.", Duration = 2})
-       end
-   end,
-})
-
-ForestTab:CreateButton({
-   Name = "Przyciągnij wszystkie Itemy z mapy",
-   Callback = function()
-       local Root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-       local itemsBrought = 0
-       if Root then
-           for _, v in pairs(workspace:GetDescendants()) do
-               -- Przyciąga narzędzia (Tools) leżące luźno na mapie
-               if v:IsA("Tool") and v.Parent == workspace then
-                   if v:FindFirstChild("Handle") then
-                       v.Handle.CFrame = Root.CFrame
-                       itemsBrought = itemsBrought + 1
-                   end
-               -- Przyciąga części, które mają właściwości do podnoszenia (TouchInterest)
-               elseif v:IsA("BasePart") and v:FindFirstChild("TouchInterest") then
-                   v.CFrame = Root.CFrame
-                   itemsBrought = itemsBrought + 1
-               end
-           end
-           Rayfield:Notify({Title = "Zrzut Itemów", Content = "Przyciągnięto " .. itemsBrought .. " przedmiotów do Ciebie!", Duration = 3})
-       end
-   end,
-})
-
--- ==========================================
--- GŁÓWNA LOGIKA (ZABEZPIECZONA)
+-- GŁÓWNA LOGIKA (BEZPIECZNA)
 -- ==========================================
 
 RunService.RenderStepped:Connect(function(deltaTime)
@@ -176,44 +218,23 @@ RunService.RenderStepped:Connect(function(deltaTime)
         Root.CFrame = Root.CFrame + (MoveDir * (State.FlySpeed * deltaTime))
     end
 
-    -- AIMBOT & AUTO-SHOOT
-    if State.Aimbot then
-        pcall(function()
-            local Target, MinDist = nil, math.huge
-            for _, p in pairs(Players:GetPlayers()) do
-                if p ~= LocalPlayer and p.Team ~= LocalPlayer.Team and p.Character and p.Character:FindFirstChild("Head") then
-                    local Pos, OnScreen = Camera:WorldToViewportPoint(p.Character.Head.Position)
-                    if OnScreen then
-                        local MousePos = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
-                        local Dist = (Vector2.new(Pos.X, Pos.Y) - MousePos).Magnitude
-                        if Dist < MinDist then MinDist = Dist; Target = p.Character.Head end
-                    end
-                end
-            end
-            if Target then
-                Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, Target.Position)
-                if State.AutoShoot and mouse1press then mouse1press(); task.wait(0.01); mouse1release() end
-            end
-        end)
-    end
-
     -- ESP HIGHLIGHT
     if State.ESP then
         for _, p in pairs(Players:GetPlayers()) do
             if p ~= LocalPlayer and p.Character then
-                local hl = p.Character:FindFirstChild("MarcinoX_ESP")
+                local hl = p.Character:FindFirstChild("Xeno_ESP")
                 if not hl then
                     hl = Instance.new("Highlight", p.Character)
-                    hl.Name = "MarcinoX_ESP"
-                    hl.FillColor = (p.Team == LocalPlayer.Team) and Color3.new(0,1,0) or Color3.new(1,0,0)
+                    hl.Name = "Xeno_ESP"
+                    hl.FillColor = Color3.new(1,0,0)
                     hl.FillTransparency = 0.5
                 end
             end
         end
     else
         for _, p in pairs(Players:GetPlayers()) do
-            if p.Character and p.Character:FindFirstChild("MarcinoX_ESP") then
-                p.Character.MarcinoX_ESP:Destroy()
+            if p.Character and p.Character:FindFirstChild("Xeno_ESP") then
+                p.Character.Xeno_ESP:Destroy()
             end
         end
     end
