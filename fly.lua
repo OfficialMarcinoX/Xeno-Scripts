@@ -1,19 +1,19 @@
 --[[ 
-    XENO RIVALS ULTIMATE HUB | POWERED BY RAYFIELD
+    XENO RIVALS GOD HUB | FINAL VERSION
     GitHub: OfficialMarcinoX
-    Features: Auto-Shoot, Silent Aim, Fixed Fly (F), Fixed NoClip, TP
+    Powered by Rayfield Engine
 ]]
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
    Name = "Xeno | OfficialMarcinoX HUB",
-   LoadingTitle = "Initializing Reverse Engine...",
-   LoadingSubtitle = "by MarcinoX",
-   ConfigurationSaving = { Enabled = true, FolderName = "XenoRivals", FileName = "Config" }
+   LoadingTitle = "MARCINOX REVERSE SYSTEM",
+   LoadingSubtitle = "Rivals Edition",
+   ConfigurationSaving = { Enabled = false }
 })
 
--- Zmienne
+-- Zmienne systemowe
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
@@ -24,104 +24,74 @@ _G.Aimbot = false
 _G.AutoShoot = false
 _G.NoClip = false
 _G.Fly = false
-_G.FlySpeed = 200
+_G.FlySpeed = 300
 
--- ZAKŁADKA RIVALS (COMBAT)
-local CombatTab = Window:CreateTab("Combat & Aim", 4483345998)
+-- WSZYSTKO W JEDNEJ ZAKŁADCE RIVALS
+local RivalsTab = Window:CreateTab("Rivals Cheats", 4483345998)
 
-CombatTab:CreateToggle({
-   Name = "Silent Aim / Lock-On",
+RivalsTab:CreateSection("Combat & Movement")
+
+RivalsTab:CreateToggle({
+   Name = "SILENT AIMBOT (Hard Lock)",
    CurrentValue = false,
    Callback = function(Value) _G.Aimbot = Value end,
 })
 
-CombatTab:AddLabel("Auto-Shoot (Automatyczne strzelanie)")
-CombatTab:CreateToggle({
-   Name = "Auto-Shoot",
+RivalsTab:CreateToggle({
+   Name = "AUTO-SHOOT (Insta-Kill)",
    CurrentValue = false,
    Callback = function(Value) _G.AutoShoot = Value end,
 })
 
--- ZAKŁADKA MOVEMENT
-local MoveTab = Window:CreateTab("Movement", 4483362458)
-
-MoveTab:CreateToggle({
-   Name = "Mega Fly (Klawisz F)",
+RivalsTab:CreateToggle({
+   Name = "MEGA FLY (Klawisz F)",
    CurrentValue = false,
-   Callback = function(Value)
-      _G.Fly = Value
-      if not Value then
-          if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-              local Root = LocalPlayer.Character.HumanoidRootPart
-              if Root:FindFirstChild("FlyVelocity") then Root.FlyVelocity:Destroy() end
-              if Root:FindFirstChild("FlyGyro") then Root.FlyGyro:Destroy() end
-              LocalPlayer.Character.Humanoid.PlatformStand = false
-          end
-      end
-   end,
+   Callback = function(Value) _G.Fly = Value end,
 })
 
-MoveTab:CreateSlider({
-   Name = "Fly Speed",
+RivalsTab:CreateSlider({
+   Name = "Prędkość Fly/Speed",
    Min = 50,
-   Max = 1000,
-   CurrentValue = 200,
+   Max = 1500,
+   CurrentValue = 300,
    Callback = function(Value) _G.FlySpeed = Value end,
 })
 
-MoveTab:CreateToggle({
-   Name = "NoClip (Przez ściany)",
+RivalsTab:CreateToggle({
+   Name = "NOCLIP (Duch)",
    CurrentValue = false,
    Callback = function(Value) _G.NoClip = Value end,
 })
 
--- ZAKŁADKA TELEPORT
-local TPTab = Window:CreateTab("Teleport", 4483345998)
+RivalsTab:CreateSection("Teleports")
 
-TPTab:CreateButton({
-   Name = "TP to Random Enemy",
+RivalsTab:CreateButton({
+   Name = "TP DO NAJBLIŻSZEGO WROGA",
    Callback = function()
+       local Target = nil
+       local Dist = math.huge
        for _, p in pairs(Players:GetPlayers()) do
            if p ~= LocalPlayer and p.Team ~= LocalPlayer.Team and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-               LocalPlayer.Character.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
-               break
+               local d = (p.Character.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+               if d < Dist then Dist = d; Target = p end
            end
+       end
+       if Target then
+           LocalPlayer.Character.HumanoidRootPart.CFrame = Target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
        end
    end,
 })
 
--- GŁÓWNA LOGIKA (LOOPY)
+-- GŁÓWNA LOGIKA (FIXED)
 RunService.RenderStepped:Connect(function()
     local Char = LocalPlayer.Character
     if not Char or not Char:FindFirstChild("HumanoidRootPart") then return end
     local Root = Char.HumanoidRootPart
 
-    -- POPRAWIONY FLY
-    if _G.Fly then
-        local BV = Root:FindFirstChild("FlyVelocity") or Instance.new("BodyVelocity", Root)
-        local BG = Root:FindFirstChild("FlyGyro") or Instance.new("BodyGyro", Root)
-        
-        BV.Name = "FlyVelocity"
-        BG.Name = "FlyGyro"
-        
-        BV.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-        BG.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-        
-        local Dir = Vector3.new(0,0.1,0) -- Anty-grawitacja
-        if UIS:IsKeyDown(Enum.KeyCode.W) then Dir = Dir + Camera.CFrame.LookVector end
-        if UIS:IsKeyDown(Enum.KeyCode.S) then Dir = Dir - Camera.CFrame.LookVector end
-        if UIS:IsKeyDown(Enum.KeyCode.A) then Dir = Dir - Camera.CFrame.RightVector end
-        if UIS:IsKeyDown(Enum.KeyCode.D) then Dir = Dir + Camera.CFrame.RightVector end
-        
-        BV.Velocity = Dir * _G.FlySpeed
-        BG.CFrame = Camera.CFrame
-        Char.Humanoid.PlatformStand = true
-    end
-
-    -- POPRAWIONY AIMBOT & AUTO-SHOOT
-    if _G.Aimbot or _G.AutoShoot then
+    -- 1. AGRESYWNY AIMBOT (Naprawiony pod Rivals)
+    if _G.Aimbot then
         local Target = nil
-        local MaxDist = 2000
+        local MaxDist = 2500
         for _, p in pairs(Players:GetPlayers()) do
             if p ~= LocalPlayer and p.Team ~= LocalPlayer.Team and p.Character and p.Character:FindFirstChild("Head") then
                 local Pos, OnScreen = Camera:WorldToViewportPoint(p.Character.Head.Position)
@@ -134,20 +104,43 @@ RunService.RenderStepped:Connect(function()
                 end
             end
         end
-
         if Target then
-            if _G.Aimbot then
-                Camera.CFrame = CFrame.new(Camera.CFrame.Position, Target.Position)
-            end
-            if _G.AutoShoot then
-                -- Symulacja kliknięcia myszką (Mouse1)
-                mouse1click() 
+            Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, Target.Position)
+        end
+    end
+
+    -- 2. AUTO-SHOOT (Wykorzystuje funkcje executora Xeno)
+    if _G.AutoShoot then
+        local TargetObj = LocalPlayer:GetMouse().Target
+        if TargetObj and TargetObj.Parent and TargetObj.Parent:FindFirstChild("Humanoid") then
+            local p = Players:GetPlayerFromCharacter(TargetObj.Parent)
+            if p and p.Team ~= LocalPlayer.Team then
+                if mouse1click then mouse1click() else mouse1press(); task.wait(0.01); mouse1release() end
             end
         end
     end
+
+    -- 3. MEGA FLY (Zasilany przez Velocity)
+    if _G.Fly then
+        local BV = Root:FindFirstChild("XenoFly") or Instance.new("BodyVelocity", Root)
+        BV.Name = "XenoFly"
+        BV.MaxForce = Vector3.new(1, 1, 1) * 10^10
+        
+        local MoveDir = Vector3.new(0, 0.1, 0)
+        if UIS:IsKeyDown(Enum.KeyCode.W) then MoveDir = MoveDir + Camera.CFrame.LookVector end
+        if UIS:IsKeyDown(Enum.KeyCode.S) then MoveDir = MoveDir - Camera.CFrame.LookVector end
+        if UIS:IsKeyDown(Enum.KeyCode.A) then MoveDir = MoveDir - Camera.CFrame.RightVector end
+        if UIS:IsKeyDown(Enum.KeyCode.D) then MoveDir = MoveDir + Camera.CFrame.RightVector end
+        
+        BV.Velocity = MoveDir * _G.FlySpeed
+        Char.Humanoid.PlatformStand = true
+    else
+        if Root:FindFirstChild("XenoFly") then Root.XenoFly:Destroy() end
+        Char.Humanoid.PlatformStand = false
+    end
 end)
 
--- NOCLIP FIX
+-- 4. NOCLIP (Wymuszenie braku kolizji)
 RunService.Stepped:Connect(function()
     if _G.NoClip and LocalPlayer.Character then
         for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
@@ -160,8 +153,8 @@ end)
 UIS.InputBegan:Connect(function(input, gpe)
     if not gpe and input.KeyCode == Enum.KeyCode.F then
         _G.Fly = not _G.Fly
-        Rayfield:Notify({Title = "Status", Content = "Fly: " .. tostring(_G.Fly), Duration = 2})
+        Rayfield:Notify({Title = "Movement", Content = "Fly Status: " .. tostring(_G.Fly), Duration = 1})
     end
 end)
 
-Rayfield:Notify({Title = "Xeno Loaded", Content = "Zasilane przez Reverse System - OfficialMarcinoX", Duration = 5})
+Rayfield:Notify({Title = "MARCINOX HUB LOADED", Content = "Rivals Tab Ready!", Duration = 5})
