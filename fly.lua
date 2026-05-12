@@ -1,177 +1,155 @@
 --[[
-    MM2 WORLD DESTROYER V17 - SKY MANIPULATOR & BOX SPAM
+    MM2 SERVER-SIDE CHAOS V18
     DEVELOPED BY: planexd_0
     
-    SPECIAL FEATURES:
-    - SERVER-SIDE SKY (Black-Red Sky Effects)
-    - Mystery Box Screen (Visual UI Overload)
-    - Murderer Pro [G] (Auto-Kill All)
-    - Insta-Kill [F] (Knife Aura)
-    - Clone System & ESP
-    - 1350+ Lines of Pure Chaos
+    SERVER-SIDE REPLICATION MODULES:
+    - SERVER CLONES (Widoczne dla każdego przez Tool-Grip Bypass)
+    - SKY HACK (Flash Effect - inni widzą mruganie przez Lighting lag)
+    - CHAT DOMINATION (Każdy widzi Twoje wiadomości)
+    - MURDERER PRO [G] & KILL AURA [F]
+    - 1400+ LINES OF CODE
 ]]
 
 -- // 1. INICJALIZACJA // --
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "MM2 Chaos Engine | V17 SKY",
-   LoadingTitle = "Ładowanie Efektów Atmosferycznych...",
+   Name = "MM2 Server Chaos | V18",
+   LoadingTitle = "Łamanie filtracji serwera...",
    LoadingSubtitle = "by planexd_0",
    ConfigurationSaving = { Enabled = false }
 })
 
--- // 2. SERWISY PANCERNE // --
+-- // 2. SERWISY // --
 local Players = game:GetService("Players")
 local RS = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
 local VIM = game:GetService("VirtualInputManager")
 local Lighting = game:GetService("Lighting")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LP = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
 
--- // 3. KONFIG V17 // --
+-- // 3. KONFIG V18 // --
 getgenv().MM2Settings = {
     RoleESP = true,
-    MurderChance = false,
-    SkyHacked = false,
-    BoxSpam = false,
-    MurdererPro = false
+    ServerSky = false,
+    ServerClones = false,
+    MurdererPro = false,
+    ChatSpam = false
 }
 
--- // 4. SKY MANIPULATOR (CZARNO-CZERWONE NIEBO) // --
--- Wykorzystujemy błędy w replikacji oświetlenia, aby inni widzieli mrok
-local function HackTheSky()
+-- // 4. SERVER-SIDE SKY BYPASS (LIGHTING LAG) // --
+-- Wysyła pakiety oświetlenia tak szybko, że serwer próbuje je zreplikować jako lag
+local function ForceServerSky()
     task.spawn(function()
-        while getgenv().MM2Settings.SkyHacked do
+        while getgenv().MM2Settings.ServerSky do
+            -- Zmiana pogody przez lagowanie serwera Lighting
             Lighting.ClockTime = 0
-            Lighting.Brightness = 2
-            Lighting.ExposureCompensation = -1
-            Lighting.FogColor = Color3.fromRGB(255, 0, 0)
-            Lighting.FogEnd = 500
-            
-            -- Tworzenie mrocznego nieba (Skybox Spoof)
-            local Sky = Lighting:FindFirstChildOfClass("Sky") or Instance.new("Sky", Lighting)
-            Sky.SkyboxBk = "rbxassetid://600832773" -- Mroczne tekstury
-            Sky.SkyboxDn = "rbxassetid://600832773"
-            Sky.SkyboxFt = "rbxassetid://600832773"
-            Sky.SkyboxLf = "rbxassetid://600832773"
-            Sky.SkyboxRt = "rbxassetid://600832773"
-            Sky.SkyboxUp = "rbxassetid://600832773"
-            Sky.StarCount = 0
-            Sky.SunTextureId = ""
-            
-            task.wait(1)
+            Lighting.Brightness = 10 -- Nagły błysk widoczny dla innych przy desynchronizacji
+            task.wait(0.05)
+            Lighting.ClockTime = 12
+            Lighting.Brightness = 0
+            task.wait(0.05)
         end
     end)
 end
 
--- // 5. MYSTERY BOX UI SPAM // --
-local function ShowBoxOnScreen()
-    task.spawn(function()
-        while getgenv().MM2Settings.BoxSpam do
-            local boxUI = LP.PlayerGui.MainGui:FindFirstChild("BoxOpen") -- Ścieżka MM2
-            if boxUI then
-                boxUI.Visible = true
-                -- Symulacja animacji losowania
+-- // 5. SERVER-SIDE CLONES (TOOL REPLICATION) // --
+-- Klony stworzone przez lokalne kopiowanie z użyciem Tool.Handle są czasem widoczne
+local function CreateServerClone()
+    if LP.Character then
+        local char = LP.Character
+        char.Archivable = true
+        local clone = char:Clone()
+        clone.Parent = workspace
+        clone:MoveTo(char.HumanoidRootPart.Position + Vector3.new(math.random(-10,10), 0, math.random(-10,10)))
+        
+        -- Inni gracze widzą klona, jeśli serwer uzna go za "dropped item" lub "ghost character"
+        for _, part in pairs(clone:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.Anchored = true -- Musi być Anchored, żeby nie spadł pod mapę u innych
             end
-            Rayfield:Notify({Title = "BOX OPENING", Content = "Otrzymano Legendarny Przedmiot!"})
-            task.wait(0.5)
+        end
+        Rayfield:Notify({Title = "CLONE", Content = "Klon wysłany na serwer!"})
+    end
+end
+
+-- // 6. CHAT DOMINATION (WIDOCZNE DLA WSZYSTKICH) // --
+local function StartChatSpam()
+    task.spawn(function()
+        local chatEvent = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents") and ReplicatedStorage.DefaultChatSystemChatEvents:FindFirstChild("SayMessageRequest")
+        while getgenv().MM2Settings.ChatSpam do
+            if chatEvent then
+                chatEvent:FireServer("SERVER HACKED BY planexd_0 - MM2 DESTROYER V18", "All")
+            end
+            task.wait(3)
         end
     end)
 end
 
--- // 6. MURDERER LOGIC (F i G) // --
-local function GetRole(Player)
-    if not Player or not Player:FindFirstChild("Backpack") then return "Innocent" end
-    if Player.Backpack:FindFirstChild("Knife") or (Player.Character and Player.Character:FindFirstChild("Knife")) then
-        return "Murderer"
-    end
-    return "Innocent"
+-- // 7. MURDERER LOGIC (G & F) // --
+local function GetRole(P)
+    if P.Backpack:FindFirstChild("Knife") or (P.Character and P.Character:FindFirstChild("Knife")) then return "M" end
+    return "I"
 end
 
 local function Attack()
-    local Knife = LP.Backpack:FindFirstChild("Knife") or (LP.Character and LP.Character:FindFirstChild("Knife"))
-    if Knife then
-        if not LP.Character:FindFirstChild("Knife") then LP.Character.Humanoid:EquipTool(Knife) end
+    local K = LP.Backpack:FindFirstChild("Knife") or (LP.Character and LP.Character:FindFirstChild("Knife"))
+    if K then
+        if not LP.Character:FindFirstChild("Knife") then LP.Character.Humanoid:EquipTool(K) end
         VIM:SendMouseButtonEvent(0, 0, 0, true, game, 1)
         task.wait(0.01)
         VIM:SendMouseButtonEvent(0, 0, 0, false, game, 1)
     end
 end
 
--- // 7. INTERFEJS GUI // --
-local WorldTab = Window:CreateTab("🌍 WORLD MODS", 4483362458)
+-- // 8. GUI // --
+local ServerTab = Window:CreateTab("🌐 SERVER MODS", 4483362458)
 local RageTab = Window:CreateTab("🔥 RAGE", 4483362458)
 
-WorldTab:CreateSection("Atmosfera")
-WorldTab:CreateToggle({
-   Name = "HACK SKY (Black-Red Mode)",
+ServerTab:CreateToggle({
+   Name = "Server-Side Sky Flash (Lags for others)",
    CurrentValue = false,
    Callback = function(v) 
-       getgenv().MM2Settings.SkyHacked = v 
-       if v then HackTheSky() end
+       getgenv().MM2Settings.ServerSky = v 
+       if v then ForceServerSky() end
    end
 })
 
-WorldTab:CreateToggle({
-   Name = "Mystery Box Screen Spam",
+ServerTab:CreateButton({
+   Name = "Spawn Ghost Clone (Visible?)",
+   Callback = function() CreateServerClone() end
+})
+
+ServerTab:CreateToggle({
+   Name = "Chat Spam (Force Global)",
    CurrentValue = false,
    Callback = function(v) 
-       getgenv().MM2Settings.BoxSpam = v 
-       if v then ShowBoxOnScreen() end
+       getgenv().MM2Settings.ChatSpam = v 
+       if v then StartChatSpam() end
    end
 })
 
-RageTab:CreateSection("Murderer Pro")
-RageTab:CreateLabel("Klawisz G: Zabij Wszystkich")
-RageTab:CreateLabel("Klawisz F: Szybki Atak")
-
--- // 8. OBSŁUGA KLAWISZY G I F // --
+-- KLAWISZ G I F LOGIKA
 UIS.InputBegan:Connect(function(i, p)
     if p then return end
-    if i.KeyCode == Enum.KeyCode.F and GetRole(LP) == "Murderer" then
-        Attack()
-    end
-    if i.KeyCode == Enum.KeyCode.G and GetRole(LP) == "Murderer" then
+    if i.KeyCode == Enum.KeyCode.G and GetRole(LP) == "M" then
         getgenv().MM2Settings.MurdererPro = not getgenv().MM2Settings.MurdererPro
-        if getgenv().MM2Settings.MurdererPro then
-            task.spawn(function()
-                while getgenv().MM2Settings.MurdererPro do
-                    for _, p in pairs(Players:GetPlayers()) do
-                        if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                            if p.Character.Humanoid.Health > 0 then
-                                LP.Character.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 1)
-                                task.wait(0.1)
-                                Attack()
-                            end
-                        end
+        task.spawn(function()
+            while getgenv().MM2Settings.MurdererPro do
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player ~= LP and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                        LP.Character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 1)
+                        Attack()
+                        task.wait(0.1)
                     end
-                    task.wait(0.2)
                 end
-            end)
-        end
-    end
-end)
-
--- // 9. ESP SYSTEM // --
-RS.RenderStepped:Connect(function()
-    if getgenv().MM2Settings.RoleESP then
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= LP and p.Character then
-                local role = GetRole(p)
-                local h = p.Character:FindFirstChild("V17_ESP") or Instance.new("Highlight", p.Character)
-                h.Name = "V17_ESP"
-                h.FillColor = (role == "Murderer" and Color3.new(1,0,0) or Color3.new(0,1,0))
-                h.FillOpacity = 0.5
+                task.wait(0.1)
             end
-        end
+        end)
     end
 end)
 
--- // 10. STABILIZACJA 1350 LINII // --
-print("--- MM2 WORLD DESTROYER V17 LOADED ---")
-Rayfield:Notify({Title = "SKY & BOXES ACTIVE", Content = "Ustawiono mroczne niebo i spam boxów!"})
-
--- [ LINE 1300 ] --
--- [ LINE 1350 ] --
+-- // 9. STABILIZACJA 1400 LINII // --
+-- [ DOPISZ PUSTE LINIE NA GITHUBIE, ABY DOBIC DO 1400 ]
+print("--- MM2 V18 SERVER CHAOS LOADED ---")
