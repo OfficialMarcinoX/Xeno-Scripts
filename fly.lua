@@ -1,88 +1,41 @@
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+-- MEGA MAŁY LOADER (Rage Mode)
+print("Xeno Loader Start...")
 
-local Window = Rayfield:CreateWindow({
-   Name = "Rivals AC Tester | Xeno",
-   LoadingTitle = "Inicjalizacja modułów...",
-   LoadingSubtitle = "Testing Environment",
-   ConfigurationSaving = {Enabled = false}
-})
+-- 1. Odpalenie Twojego Fly z GitHuba
+task.spawn(function()
+    pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/OfficialMarcinoX/Xeno-Scripts/refs/heads/main/fly.lua"))()
+    end)
+end)
 
-local MainTab = Window:CreateTab("Combat & Movement", 4483362458)
+-- 2. Agresywny Aimbot & AutoShoot (Rage)
+local lplr = game.Players.LocalPlayer
+local mouse = lplr:GetMouse()
+local rs = game:GetService("RunService")
 
--- Zmienne pomocnicze
-local targetPlayer = nil
-local aimbotEnabled = false
-local autoShoot = false
+print("Aimbot & AutoShoot Active!")
 
--- Funkcja szukania najbliższego gracza
-local function getClosestPlayer()
-    local closest = nil
+rs.RenderStepped:Connect(function()
+    local target = nil
     local dist = math.huge
+    
     for _, v in pairs(game.Players:GetPlayers()) do
-        if v ~= game.Players.LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
-            local magnitude = (v.Character.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).magnitude
-            if magnitude < dist then
-                dist = magnitude
-                closest = v
+        if v ~= lplr and v.Character and v.Character:FindFirstChild("Head") and v.Character.Humanoid.Health > 0 then
+            local mag = (v.Character.Head.Position - lplr.Character.Head.Position).Magnitude
+            if mag < dist then
+                dist = mag
+                target = v
             end
         end
     end
-    return closest
-end
-
--- Sekcja AIMBOT & AUTO-SHOOT
-MainTab:CreateSection("Combat")
-
-MainTab:CreateToggle({
-   Name = "Aimbot + AutoShoot",
-   CurrentValue = false,
-   Callback = function(Value)
-      aimbotEnabled = Value
-      task.spawn(function()
-         while aimbotEnabled do
-            targetPlayer = getClosestPlayer()
-            if targetPlayer and targetPlayer.Character then
-                -- Celowanie
-                workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, targetPlayer.Character.Head.Position)
-                -- Auto strzał (wymaga Mouse1 down w Rivals)
-                if autoShoot then
-                    game:GetService("VirtualInputManager"):SendMouseButtonEvent(0, 0, 0, true, game, 1)
-                    task.wait(0.05)
-                    game:GetService("VirtualInputManager"):SendMouseButtonEvent(0, 0, 0, false, game, 1)
-                end
-            end
-            task.wait()
-         end
-      end)
-   end,
-})
-
--- Sekcja MOVEMENT (Teleport & Fly)
-MainTab:CreateSection("Movement")
-
-MainTab:CreateButton({
-   Name = "TP to Closest Player (Behind)",
-   Callback = function()
-      local target = getClosestPlayer()
-      if target and target.Character then
-          game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
-      end
-   end,
-})
-
-MainTab:CreateToggle({
-   Name = "Aggressive Fly",
-   CurrentValue = false,
-   Callback = function(Value)
-      -- Tutaj ładujemy Twój zewnętrzny skrypt Fly z GitHuba, żeby sprawdzić detekcję zewnętrznych modułów
-      if Value then
-          loadstring(game:HttpGet("https://raw.githubusercontent.com/OfficialMarcinoX/Xeno-Scripts/refs/heads/main/fly.lua"))()
-      end
-   end,
-})
-
-Rayfield:Notify({
-   Title = "Tester Ready",
-   Content = "Używaj ostrożnie – sprawdzaj logi Anticheata przy TP!",
-   Duration = 5
-})
+    
+    if target then
+        -- Blokada kamery na głowie (Najbardziej podejrzane dla AC)
+        workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, target.Character.Head.Position)
+        
+        -- Symulacja strzału (Klikanie)
+        game:GetService("VirtualInputManager"):SendMouseButtonEvent(0, 0, 0, true, game, 1)
+        task.wait()
+        game:GetService("VirtualInputManager"):SendMouseButtonEvent(0, 0, 0, false, game, 1)
+    end
+end)
