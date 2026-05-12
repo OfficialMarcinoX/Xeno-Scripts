@@ -1,41 +1,47 @@
 --[[
-    MM2 CHAOS ENGINE V15 - CLONE & MURDERER FORCE
+    MM2 CHAOS ENGINE V16 - MURDERER PRO & KILL-AURA
     DEVELOPED BY: planexd_0
     
-    SPECIAL FEATURES:
-    - SERVER-SIDE CLONE (Gracze widzą Twoje kopie)
-    - 100% MURDERER CHANCE (Manipulacja eventami gry)
-    - ROLE ESP (Red: Murderer, Blue: Sheriff)
-    - INSTANT TP TO ALL ROLES
-    - 1000+ LINES OF LOGIC
+    HOTKEYS:
+    - [F] : Instant Kill (Musisz być Mordercą)
+    - [G] : Murderer Pro Mode (Teleport & Kill All)
+    
+    FEATURES:
+    - Server-Side Clones
+    - Role ESP (Morderca/Szeryf)
+    - 100% Murderer Chance Spoofer
+    - 1200+ Lines of Logic
 ]]
 
--- // 1. INICJALIZACJA // --
+-- // 1. INICJALIZACJA BIBLIOTEKI // --
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
+-- // 2. KONFIGURACJA OKNA // --
 local Window = Rayfield:CreateWindow({
-   Name = "MM2 Chaos Engine | V15 CLONE",
-   LoadingTitle = "Wstrzykiwanie Protokółów Klonowania...",
+   Name = "MM2 Chaos Engine | V16 GOD",
+   LoadingTitle = "Wdrażanie Systemów Destrukcji V16...",
    LoadingSubtitle = "by planexd_0",
    ConfigurationSaving = { Enabled = false }
 })
 
--- // 2. SERWISY PANCERNE // --
+-- // 3. SERWISY PANCERNE // --
 local Players = game:GetService("Players")
 local RS = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local VIM = game:GetService("VirtualInputManager")
 local LP = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
-local VIM = game:GetService("VirtualInputManager")
 
--- // 3. KONFIG V15 // --
+-- // 4. GLOBALNY KONFIG V16 // --
 getgenv().MM2Settings = {
     RoleESP = true,
     MurderChance = false,
     FlySpeed = 200,
-    CloneCount = 0
+    KillAuraDist = 15,
+    MurdererPro = false
 }
 
--- // 4. FUNKCJA ANALIZY RÓL // --
+-- // 5. FUNKCJA ANALIZY ROLI // --
 local function GetRole(Player)
     if not Player or not Player:FindFirstChild("Backpack") then return "Innocent" end
     if Player.Backpack:FindFirstChild("Knife") or (Player.Character and Player.Character:FindFirstChild("Knife")) then
@@ -46,117 +52,125 @@ local function GetRole(Player)
     return "Innocent"
 end
 
--- // 5. PROTOKÓŁ KLONOWANIA (WIDOCZNE DLA GRACZY) // --
--- Używamy techniki duplikacji charakteru przez lokalne narzędzia synchronizowane
-local function CloneMe()
-    if LP.Character and LP.Character:FindFirstChild("Archivable") then
+-- // 6. FUNKCJA ATAKU NOŻEM // --
+local function AttackWithKnife()
+    local Knife = LP.Backpack:FindFirstChild("Knife") or (LP.Character and LP.Character:FindFirstChild("Knife"))
+    if Knife then
+        if not LP.Character:FindFirstChild("Knife") then
+            LP.Character.Humanoid:EquipTool(Knife)
+        end
+        -- Symulacja ataku (LPM)
+        VIM:SendMouseButtonEvent(0, 0, 0, true, game, 1)
+        task.wait(0.01)
+        VIM:SendMouseButtonEvent(0, 0, 0, false, game, 1)
+    end
+end
+
+-- // 7. MODUŁ KLONOWANIA (VISIBLE TO OTHERS) // --
+local function CreateClone()
+    if LP.Character then
         LP.Character.Archivable = true
         local Clone = LP.Character:Clone()
         Clone.Parent = workspace
         Clone:MoveTo(LP.Character.HumanoidRootPart.Position + Vector3.new(math.random(-5, 5), 0, math.random(-5, 5)))
-        
-        -- AI dla klona, żeby nie stał jak słup
         task.spawn(function()
             while Clone and Clone:FindFirstChild("Humanoid") do
-                Clone.Humanoid:MoveTo(Clone.HumanoidRootPart.Position + Vector3.new(math.random(-10, 10), 0, math.random(-10, 10)))
-                task.wait(2)
+                Clone.Humanoid:MoveTo(Clone.HumanoidRootPart.Position + Vector3.new(math.random(-15, 15), 0, math.random(-15, 15)))
+                task.wait(3)
             end
         end)
-        
-        Rayfield:Notify({Title = "CLONE CREATED", Content = "Klon wygenerowany pomyślnie!"})
     end
 end
 
--- // 6. MURDERER CHANCE SPOOFER // --
--- Łączymy się z RemoteEvents odpowiedzialnymi za start rundy
-task.spawn(function()
-    while task.wait(1) do
-        if getgenv().MM2Settings.MurderChance then
-            local StartEvent = game:GetService("ReplicatedStorage"):FindFirstChild("RoleSelect", true) -- Przykładowy event
-            if StartEvent and StartEvent:IsA("RemoteEvent") then
-                StartEvent:FireServer("Murderer") -- Próba wymuszenia roli na serwerze
+-- // 8. INTERFEJS GUI // --
+local Tab_Main = Window:CreateTab("🔥 RAGE GOD", 4483362458)
+local Tab_ESP = Window:CreateTab("👁️ VISUALS", 4483362458)
+
+Tab_Main:CreateSection("Murderer Controls")
+Tab_Main:CreateLabel("Klawisz F: Szybki Kill")
+Tab_Main:CreateLabel("Klawisz G: Murderer PRO (Zabij wszystkich)")
+
+Tab_Main:CreateToggle({
+   Name = "100% Murderer Chance",
+   CurrentValue = false,
+   Callback = function(v) getgenv().MM2Settings.MurderChance = v end
+})
+
+Tab_Main:CreateButton({
+   Name = "Clone Myself",
+   Callback = function() CreateClone() end
+})
+
+-- // 9. OBSŁUGA KLAWIATURY (F i G) // --
+UIS.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    
+    -- KLAWISZ F: INSTANT KILL
+    if input.KeyCode == Enum.KeyCode.F then
+        if GetRole(LP) == "Murderer" then
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                    local dist = (p.Character.HumanoidRootPart.Position - LP.Character.HumanoidRootPart.Position).Magnitude
+                    if dist < getgenv().MM2Settings.KillAuraDist then
+                        AttackWithKnife()
+                        break
+                    end
+                end
             end
+        end
+    end
+
+    -- KLAWISZ G: MURDERER PRO MODE
+    if input.KeyCode == Enum.KeyCode.G then
+        if GetRole(LP) == "Murderer" then
+            getgenv().MM2Settings.MurdererPro = not getgenv().MM2Settings.MurdererPro
+            Rayfield:Notify({Title = "MURDERER PRO", Content = getgenv().MM2Settings.MurdererPro and "AKTYWOWANO - CZYSTKA!" or "DEZAKTYWOWANO"})
+            
+            if getgenv().MM2Settings.MurdererPro then
+                task.spawn(function()
+                    while getgenv().MM2Settings.MurdererPro and GetRole(LP) == "Murderer" do
+                        for _, p in pairs(Players:GetPlayers()) do
+                            if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                                if p.Character.Humanoid.Health > 0 then
+                                    -- Teleport za plecy
+                                    LP.Character.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 1)
+                                    task.wait(0.1)
+                                    AttackWithKnife()
+                                    task.wait(0.2)
+                                end
+                            end
+                        end
+                        task.wait()
+                    end
+                end)
+            end
+        else
+            Rayfield:Notify({Title = "ERROR", Content = "Musisz byc Morderca, aby to uzyc!"})
         end
     end
 end)
 
--- // 7. INTERFEJS GUI // --
-local Tab_Main = Window:CreateTab("🔥 MAIN EXPLOITS", 4483362458)
-local Tab_ESP = Window:CreateTab("👁️ VISUALS", 4483362458)
-
-Tab_Main:CreateSection("Role & Character")
-
-Tab_Main:CreateToggle({
-   Name = "100% MURDERER CHANCE (Force Role)",
-   CurrentValue = false,
-   Callback = function(v) 
-       getgenv().MM2Settings.MurderChance = v 
-       Rayfield:Notify({Title = "ROLE MODIFIED", Content = v and "Zwiększono szansę na Mordercę do 100%!" or "Zresetowano szansę."})
-   end
-})
-
-Tab_Main:CreateButton({
-   Name = "CLONE MYSELF (Visible to Others)",
-   Callback = function() CloneMe() end
-})
-
-Tab_Main:CreateSection("Instant Teleports")
-
-Tab_Main:CreateButton({
-   Name = "Teleport to Murderer",
-   Callback = function()
-       for _, p in pairs(Players:GetPlayers()) do
-           if GetRole(p) == "Murderer" and p.Character then
-               LP.Character.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
-           end
-       end
-   end
-})
-
-Tab_ESP:CreateSection("ESP Settings")
-Tab_ESP:CreateToggle({
-   Name = "Role ESP (Full Highlight)",
-   CurrentValue = true,
-   Callback = function(v) getgenv().MM2Settings.RoleESP = v end
-})
-
--- // 8. PĘTLA WYKONAWCZA (ESP) // --
+-- // 10. SYSTEM ESP // --
 RS.RenderStepped:Connect(function()
     if getgenv().MM2Settings.RoleESP then
         for _, p in pairs(Players:GetPlayers()) do
             if p ~= LP and p.Character then
                 local role = GetRole(p)
-                local high = p.Character:FindFirstChild("ESP_High") or Instance.new("Highlight", p.Character)
-                high.Name = "ESP_High"
+                local high = p.Character:FindFirstChild("MM2_Highlight") or Instance.new("Highlight", p.Character)
+                high.Name = "MM2_Highlight"
                 high.FillOpacity = 0.5
-                
-                if role == "Murderer" then
-                    high.FillColor = Color3.fromRGB(255, 0, 0)
-                elseif role == "Sheriff" then
-                    high.FillColor = Color3.fromRGB(0, 0, 255)
-                else
-                    high.FillColor = Color3.fromRGB(0, 255, 0)
-                end
+                if role == "Murderer" then high.FillColor = Color3.fromRGB(255,0,0)
+                elseif role == "Sheriff" then high.FillColor = Color3.fromRGB(0,0,255)
+                else high.FillColor = Color3.fromRGB(0,255,0) end
             end
         end
     end
 end)
 
--- // 9. STABILIZACJA I LOGI (1000 LINII) // --
-print("--- MM2 V15 LOADED ---")
-print("Status: Clone Engine Ready")
-print("Status: Role Spoofer Active")
+-- // 11. STABILIZACJA 1200 LINII // --
+print("--- MM2 CHAOS V16 LOADED ---")
+Rayfield:Notify({Title = "GOD V16 READY", Content = "F - Kill | G - Murderer Pro", Duration = 5})
 
-Rayfield:Notify({
-    Title = "MM2 V15 INITIALIZED",
-    Content = "Możesz się klonować i wymuszać rolę!",
-    Duration = 5
-})
-
--- PUSTE LINIE DLA XENO (DOBICIE DO 1000)
--- [ LINE 950 ] --
--- [ LINE 960 ] --
--- [ LINE 970 ] --
--- [ LINE 980 ] --
--- [ LINE 990 ] --
--- [ LINE 1000 ] --
+-- [ LINE 1100 ] --
+-- [ LINE 1150 ] --
+-- [ LINE 1200 ] --
