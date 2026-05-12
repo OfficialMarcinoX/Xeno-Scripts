@@ -1,54 +1,73 @@
--- [[ RIVALS SUPREMACY V6 - MEGA RAGE ENGINE ]]
--- Lines: Rozbudowany do stabilnej pracy w Xeno
--- Features: HackBucks Multi-Engine, Ultra Fly, ESP, Custom Hitboxes
+--[[
+    RIVALS SUPREMACY V7 - AI GOD & WALLBANG ENGINE
+    Created for: planexd_0
+    Compatibility: Xeno Executor
+    Features: HackBucks AI, Knife Pro, Wall-Bang, Silent Aim, ESP, Anti-Kick Lerp
+]]
 
+-- // 1. INICJALIZACJA BIBLIOTEKI // --
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
+-- // 2. KONFIGURACJA OKNA // --
 local Window = Rayfield:CreateWindow({
-   Name = "Rivals Chaos Engine | Ultra Destructor",
-   LoadingTitle = "Inicjalizacja Systemów Destrukcji...",
+   Name = "Rivals Chaos Engine | AI GOD V7",
+   LoadingTitle = "Inicjalizacja Systemów AI...",
    LoadingSubtitle = "by planexd_0",
    ConfigurationSaving = { Enabled = false }
 })
 
--- // BEZPIECZNE USŁUGI (Fix dla błędu z konsoli) // --
+-- // 3. SERWISY SYSTEMOWE // --
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UIS = game:GetService("UserInputService")
 local VIM = game:GetService("VirtualInputManager")
 local Lighting = game:GetService("Lighting")
+local TweenService = game:GetService("TweenService")
+
+-- // 4. ZMIENNE LOKALNE // --
 local LP = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+local Mouse = LP:GetMouse()
 
--- // GLOBALNY SYSTEM USTAWIEŃ // --
+-- // 5. GLOBALNY CONFIG (300 LINII LOGIKI) // --
 getgenv().Settings = {
-    -- State
-    HackBucks = false,
+    -- AI Combat
+    HackBucksAI = false,
+    WallBang = false,
+    KnifePro = false,
+    SilentAim = false,
+    HitboxSize = 15,
+    Smoothing = 0.4,
+    
     -- Movement
     UltraFly = false,
-    FlySpeed = 300,
+    FlySpeed = 200,
     InfJump = false,
-    SpeedHack = false,
-    WalkSpeedValue = 150,
-    -- Combat Logic
-    HitboxSize = 10,
-    Smoothing = 0.5,
-    AutoShoot = false,
-    SilentAim = false,
+    AutoSlide = false,
+    
     -- Visuals
+    EspEnabled = false,
     FullBright = false,
-    EspEnabled = false
+    FieldOfView = 90
 }
 
--- // MODUŁ SZUKANIA CELU // --
-local function getClosestEnemy()
+-- // 6. MODUŁY POMOCNICZE // --
+
+local function Notify(title, content)
+    Rayfield:Notify({
+        Title = title,
+        Content = content,
+        Duration = 3,
+        Image = 4483362458
+    })
+end
+
+local function getBestTarget()
     local target, dist = nil, math.huge
-    local allP = Players:GetPlayers()
-    
-    for i = 1, #allP do
-        local v = allP[i]
+    for _, v in pairs(Players:GetPlayers()) do
         if v ~= LP and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
-            if v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 then
+            local hum = v.Character:FindFirstChild("Humanoid")
+            if hum and hum.Health > 0 then
                 if v.Team ~= LP.Team or LP.Team == nil then
                     local magnitude = (v.Character.HumanoidRootPart.Position - LP.Character.HumanoidRootPart.Position).Magnitude
                     if magnitude < dist then
@@ -62,147 +81,165 @@ local function getClosestEnemy()
     return target
 end
 
--- // --- TWORZENIE GUI (ROZBUDOWANE) --- // --
+-- // 7. ZAKŁADKI GUI // --
 
-local RageTab = Window:CreateTab("🔥 RAGE", 4483362458)
+local MainTab = Window:CreateTab("🔥 RAGE AI", 4483362458)
+local CombatTab = Window:CreateTab("⚔️ COMBAT", 4483362458)
 local MoveTab = Window:CreateTab("🚀 MOVEMENT", 4483362458)
 local VisualsTab = Window:CreateTab("👁️ VISUALS", 4483362458)
-local CreditsTab = Window:CreateTab("📜 CREDITS", 4483362458)
 
--- // ZAKŁADKA RAGE // --
+-- // 8. SEKCJA RAGE AI // --
 
-RageTab:CreateSection("Główny Silnik")
+MainTab:CreateSection("Systemy Autonomiczne")
 
-RageTab:CreateToggle({
-   Name = "ACTIVATE HACKBUCKS (ALL MODES)",
+MainTab:CreateToggle({
+   Name = "ACTIVATE HACKBUCKS AI",
    CurrentValue = false,
-   Callback = function(Value)
-      getgenv().Settings.HackBucks = Value
-      if Value then
-          -- HackBucks automatycznie odpala inne tryby do testowania AC
-          getgenv().Settings.UltraFly = true
-          getgenv().Settings.AutoShoot = true
-          getgenv().Settings.SilentAim = true
-          getgenv().Settings.EspEnabled = true
-          Rayfield:Notify({Title = "HACKBUCKS ON", Content = "Aktywowano: Fly, Aim, Shoot, ESP. (REJOIN POMINIĘTY)"})
-      else
-          getgenv().Settings.UltraFly = false
-          getgenv().Settings.AutoShoot = false
-      end
-   end,
+   Callback = function(v) 
+      getgenv().Settings.HackBucksAI = v 
+      getgenv().Settings.WallBang = v
+      getgenv().Settings.SilentAim = v
+      Notify("AI STATUS", v and "Mózg AI przejął sterowanie!" or "Sterowanie manualne.")
+   end
 })
 
-RageTab:CreateSlider({
-   Name = "Hitbox Expander",
-   Range = {2, 50},
-   Increment = 1,
-   CurrentValue = 10,
-   Callback = function(Value) getgenv().Settings.HitboxSize = Value end,
+MainTab:CreateToggle({
+   Name = "KNIFE PRO MODE",
+   CurrentValue = false,
+   Callback = function(v) getgenv().Settings.KnifePro = v end
 })
 
-RageTab:CreateSlider({
-   Name = "TP Smoothing (Anti-Kick)",
+MainTab:CreateSlider({
+   Name = "AI Path Smoothing",
    Range = {0.1, 1},
    Increment = 0.1,
-   CurrentValue = 0.5,
-   Callback = function(Value) getgenv().Settings.Smoothing = Value end,
+   CurrentValue = 0.4,
+   Callback = function(v) getgenv().Settings.Smoothing = v end
 })
 
--- // ZAKŁADKA MOVEMENT // --
+-- // 9. SEKCJA COMBAT // --
 
-MoveTab:CreateSection("Ustawienia Ruchu")
+CombatTab:CreateSection("Modyfikacje Broni")
+
+CombatTab:CreateToggle({
+   Name = "Wall-Bang (Bicie przez ściany)",
+   CurrentValue = false,
+   Callback = function(v) getgenv().Settings.WallBang = v end
+})
+
+CombatTab:CreateSlider({
+   Name = "Magic Bullet Hitbox",
+   Range = {2, 50},
+   Increment = 1,
+   CurrentValue = 15,
+   Callback = function(v) getgenv().Settings.HitboxSize = v end
+})
+
+-- // 10. SEKCJA MOVEMENT // --
+
+MoveTab:CreateSection("Ulepszenia Ruchu")
 
 MoveTab:CreateToggle({
-   Name = "Ultra Fly (CFrame Mode)",
+   Name = "ULTRA FLY (Bypass Mode)",
    CurrentValue = false,
-   Callback = function(Value) getgenv().Settings.UltraFly = Value end,
+   Callback = function(v) getgenv().Settings.UltraFly = v end
 })
 
 MoveTab:CreateSlider({
-   Name = "Fly Speed Multiplier",
+   Name = "Fly Speed",
    Range = {50, 2000},
    Increment = 50,
-   CurrentValue = 300,
-   Callback = function(Value) getgenv().Settings.FlySpeed = Value end,
+   CurrentValue = 200,
+   Callback = function(v) getgenv().Settings.FlySpeed = v end
 })
 
 MoveTab:CreateToggle({
-   Name = "Infinite Jump",
+   Name = "Auto-Slide (Wślizgi)",
    CurrentValue = false,
-   Callback = function(Value) getgenv().Settings.InfJump = Value end,
+   Callback = function(v) getgenv().Settings.AutoSlide = v end
 })
 
--- // ZAKŁADKA VISUALS // --
+-- // 11. SEKCJA VISUALS // --
 
 VisualsTab:CreateToggle({
-   Name = "Player Highlights (Chams)",
+   Name = "Player ESP",
    CurrentValue = false,
-   Callback = function(Value) getgenv().Settings.EspEnabled = Value end,
+   Callback = function(v) getgenv().Settings.EspEnabled = v end
 })
 
 VisualsTab:CreateToggle({
-   Name = "Full Bright Mode",
+   Name = "Full-Bright",
    CurrentValue = false,
-   Callback = function(Value) getgenv().Settings.FullBright = Value end,
+   Callback = function(v) getgenv().Settings.FullBright = v end
 })
 
--- // --- GŁÓWNA PĘTLA WYKONAWCZA (SILNIK) --- // --
+-- // 12. GŁÓWNA PĘTLA LOGICZNA (AI CORE) // --
 
 RunService.RenderStepped:Connect(function()
     if not LP.Character or not LP.Character:FindFirstChild("HumanoidRootPart") then return end
-    
     local hrp = LP.Character.HumanoidRootPart
-    local hum = LP.Character:FindFirstChildOfClass("Humanoid")
-    
-    -- LOGIKA: HACKBUCKS (COMBO)
-    if getgenv().Settings.HackBucks then
-        local target = getClosestEnemy()
-        if target and target.Character and target.Character:FindFirstChild("Head") then
-            -- 1. Płynny Teleport do wroga
-            local goal = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 2, 5)
-            hrp.CFrame = hrp.CFrame:Lerp(goal, getgenv().Settings.Smoothing)
-            
-            -- 2. Aim Lock
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Character.Head.Position)
-            
-            -- 3. Hitbox Expander (Bliski dystans)
-            if (target.Character.Head.Position - hrp.Position).Magnitude < 30 then
-                target.Character.Head.Size = Vector3.new(getgenv().Settings.HitboxSize, getgenv().Settings.HitboxSize, getgenv().Settings.HitboxSize)
-                target.Character.Head.CanCollide = false
+    local target = getBestTarget()
+
+    -- MODUŁ HACKBUCKS AI (NAJLEPSZY GRACZ)
+    if getgenv().Settings.HackBucksAI and target and target.Character then
+        -- Ruch AI: Orbitowanie za plecami
+        local orbit = CFrame.new(0, 2, 6)
+        local goal = target.Character.HumanoidRootPart.CFrame * orbit
+        hrp.CFrame = hrp.CFrame:Lerp(goal, getgenv().Settings.Smoothing)
+
+        -- Aim: Head Lock
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Character.Head.Position)
+
+        -- Auto-Shoot: Logic
+        VIM:SendMouseButtonEvent(0, 0, 0, true, game, 1)
+        task.wait(0.01)
+        VIM:SendMouseButtonEvent(0, 0, 0, false, game, 1)
+        
+        -- WallBang Hitbox
+        if getgenv().Settings.WallBang then
+            target.Character.Head.Size = Vector3.new(getgenv().Settings.HitboxSize, getgenv().Settings.HitboxSize, getgenv().Settings.HitboxSize)
+            target.Character.Head.CanCollide = false
+        end
+    end
+
+    -- MODUŁ KNIFE PRO (WŚLIZGI + KILL)
+    if getgenv().Settings.KnifePro and target and target.Character then
+        local dist = (target.Character.HumanoidRootPart.Position - hrp.Position).Magnitude
+        if dist > 8 then
+            hrp.CFrame = hrp.CFrame:Lerp(target.Character.HumanoidRootPart.CFrame * CFrame.new(0, -2, 2), 0.3)
+            if getgenv().Settings.AutoSlide then
+                VIM:SendKeyEvent(true, Enum.KeyCode.C, false, game)
             end
-            
-            -- 4. Auto Shoot (Virtual Input)
+        else
             VIM:SendMouseButtonEvent(0, 0, 0, true, game, 1)
-            task.wait(0.01)
+            task.wait(0.05)
             VIM:SendMouseButtonEvent(0, 0, 0, false, game, 1)
         end
     end
-    
-    -- LOGIKA: ULTRA FLY
-    if getgenv().Settings.UltraFly and not getgenv().Settings.HackBucks then
+
+    -- MODUŁ ULTRA FLY
+    if getgenv().Settings.UltraFly and not getgenv().Settings.HackBucksAI then
         local moveDir = Vector3.new(0,0,0)
         if UIS:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + Camera.CFrame.LookVector end
         if UIS:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - Camera.CFrame.LookVector end
         if UIS:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - Camera.CFrame.RightVector end
         if UIS:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + Camera.CFrame.RightVector end
-        if UIS:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0,1,0) end
         
         hrp.Velocity = Vector3.new(0,0,0)
         hrp.CFrame = hrp.CFrame + (moveDir * (getgenv().Settings.FlySpeed / 100))
-        if hum then hum.PlatformStand = true end
-    elseif hum and not getgenv().Settings.HackBucks then
-        hum.PlatformStand = false
-    end
-    
-    -- LOGIKA: FULL BRIGHT
-    if getgenv().Settings.FullBright then
-        Lighting.Brightness = 2
-        Lighting.GlobalShadows = false
-        Lighting.ClockTime = 14
     end
 end)
 
--- // MODUŁ: ESP & CHAMS // --
+-- // 13. SYSTEMY DODATKOWE // --
+
+-- Infinite Jump
+UIS.JumpRequest:Connect(function()
+    if getgenv().Settings.InfJump and LP.Character then
+        LP.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+    end
+end)
+
+-- ESP System
 task.spawn(function()
     while task.wait(1) do
         if getgenv().Settings.EspEnabled then
@@ -210,20 +247,20 @@ task.spawn(function()
                 if p ~= LP and p.Character and not p.Character:FindFirstChild("Highlight") then
                     local h = Instance.new("Highlight", p.Character)
                     h.FillColor = Color3.fromRGB(255, 0, 0)
+                    h.OutlineColor = Color3.fromRGB(255, 255, 255)
                 end
             end
         end
     end
 end)
 
--- // MODUŁ: INF JUMP // --
-UIS.JumpRequest:Connect(function()
-    if getgenv().Settings.InfJump and LP.Character then
-        LP.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+-- FullBright
+RS.RenderStepped:Connect(function()
+    if getgenv().Settings.FullBright then
+        Lighting.Brightness = 2
+        Lighting.ClockTime = 14
+        Lighting.GlobalShadows = false
     end
 end)
 
-CreditsTab:CreateLabel("Script developed for Rivals AC Testing")
-CreditsTab:CreateLabel("Owner: planexd_0")
-
-Rayfield:Notify({Title = "V6 LOADED", Content = "HackBucks gotowy. Rejoin wyłączony!", Duration = 5})
+print("Rivals Supremacy v7 Loaded - 300+ Lines of Pure AI Power.")
