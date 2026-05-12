@@ -1,85 +1,88 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "Anticheat Tester | Fly",
-   LoadingTitle = "Xeno Executor",
-   LoadingSubtitle = "by Gemini",
-   ConfigurationSaving = {
-      Enabled = false
-   }
+   Name = "Rivals AC Tester | Xeno",
+   LoadingTitle = "Inicjalizacja modułów...",
+   LoadingSubtitle = "Testing Environment",
+   ConfigurationSaving = {Enabled = false}
 })
 
-local MainTab = Window:CreateTab("Movement", 4483362458) -- Ikona
+local MainTab = Window:CreateTab("Combat & Movement", 4483362458)
 
-local flying = false
-local speed = 50
-local cur_ws = game.Players.LocalPlayer.Character.Humanoid.WalkSpeed
+-- Zmienne pomocnicze
+local targetPlayer = nil
+local aimbotEnabled = false
+local autoShoot = false
+
+-- Funkcja szukania najbliższego gracza
+local function getClosestPlayer()
+    local closest = nil
+    local dist = math.huge
+    for _, v in pairs(game.Players:GetPlayers()) do
+        if v ~= game.Players.LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+            local magnitude = (v.Character.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).magnitude
+            if magnitude < dist then
+                dist = magnitude
+                closest = v
+            end
+        end
+    end
+    return closest
+end
+
+-- Sekcja AIMBOT & AUTO-SHOOT
+MainTab:CreateSection("Combat")
 
 MainTab:CreateToggle({
-   Name = "Enable Fly",
+   Name = "Aimbot + AutoShoot",
    CurrentValue = false,
-   Flag = "FlyToggle",
    Callback = function(Value)
-      flying = Value
-      local player = game.Players.LocalPlayer
-      local character = player.Character or player.CharacterAdded:Wait()
-      local hrp = character:WaitForChild("HumanoidRootPart")
-      
-      if flying then
-         local bv = Instance.new("BodyVelocity")
-         bv.Name = "XenoFly"
-         bv.Velocity = Vector3.new(0,0,0)
-         bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-         bv.Parent = hrp
-         
-         task.spawn(function()
-            while flying do
-               local cam = workspace.CurrentCamera
-               local moveDir = Vector3.new(0,0,0)
-               
-               if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.W) then
-                  moveDir = moveDir + cam.CFrame.LookVector
-               end
-               if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.S) then
-                  moveDir = moveDir - cam.CFrame.LookVector
-               end
-               if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.A) then
-                  moveDir = moveDir - cam.CFrame.RightVector
-               end
-               if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.D) then
-                  moveDir = moveDir + cam.CFrame.RightVector
-               end
-               if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.Space) then
-                  moveDir = moveDir + Vector3.new(0,1,0)
-               end
-               if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.LeftShift) then
-                  moveDir = moveDir - Vector3.new(0,1,0)
-               end
-               
-               bv.Velocity = moveDir * speed
-               task.wait()
+      aimbotEnabled = Value
+      task.spawn(function()
+         while aimbotEnabled do
+            targetPlayer = getClosestPlayer()
+            if targetPlayer and targetPlayer.Character then
+                -- Celowanie
+                workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, targetPlayer.Character.Head.Position)
+                -- Auto strzał (wymaga Mouse1 down w Rivals)
+                if autoShoot then
+                    game:GetService("VirtualInputManager"):SendMouseButtonEvent(0, 0, 0, true, game, 1)
+                    task.wait(0.05)
+                    game:GetService("VirtualInputManager"):SendMouseButtonEvent(0, 0, 0, false, game, 1)
+                end
             end
-            bv:Destroy()
-         end)
+            task.wait()
+         end
+      end)
+   end,
+})
+
+-- Sekcja MOVEMENT (Teleport & Fly)
+MainTab:CreateSection("Movement")
+
+MainTab:CreateButton({
+   Name = "TP to Closest Player (Behind)",
+   Callback = function()
+      local target = getClosestPlayer()
+      if target and target.Character then
+          game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
       end
    end,
 })
 
-MainTab:CreateSlider({
-   Name = "Fly Speed",
-   Range = {16, 300},
-   Increment = 1,
-   Suffix = " studs/s",
-   CurrentValue = 50,
-   Flag = "FlySpeed",
+MainTab:CreateToggle({
+   Name = "Aggressive Fly",
+   CurrentValue = false,
    Callback = function(Value)
-      speed = Value
+      -- Tutaj ładujemy Twój zewnętrzny skrypt Fly z GitHuba, żeby sprawdzić detekcję zewnętrznych modułów
+      if Value then
+          loadstring(game:HttpGet("https://raw.githubusercontent.com/OfficialMarcinoX/Xeno-Scripts/refs/heads/main/fly.lua"))()
+      end
    end,
 })
 
 Rayfield:Notify({
-   Title = "Gotowe!",
-   Content = "Skrypt do testów załadowany pomyślnie.",
-   Duration = 5,
-   Image = 4483362458,
+   Title = "Tester Ready",
+   Content = "Używaj ostrożnie – sprawdzaj logi Anticheata przy TP!",
+   Duration = 5
 })
